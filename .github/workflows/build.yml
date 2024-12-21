@@ -17,7 +17,7 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        service: [coordinator, dcv, caa]
+        service: [coordinator, dcv_checker, caa_checker]
         platform:
           - linux/amd64
           - linux/arm64
@@ -67,9 +67,9 @@ jobs:
       id: push
       uses: docker/build-push-action@v6
       with:
-        context: ${{ matrix.service }}
+        context: api-integration
         platforms: ${{ matrix.platform }}
-        build-args: PYTHON_VERSION=${{ steps.python-version.outputs.PYTHON_VERSION }}
+        build-args: PYTHON_VERSION=${{ steps.python-version.outputs.PYTHON_VERSION }} SERVICE_PATH=src/mpic_${{ matrix.service }}_service
         file: ${{ matrix.service }}/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
