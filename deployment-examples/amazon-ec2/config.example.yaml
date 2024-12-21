@@ -1,0 +1,19 @@
+# A list of perspectives with the format <RIR>.<AWS-Region> TODO link to pages.
+perspectives:
+  - us-east-2
+  - us-west-2
+  - eu-central-1
+  - eu-west-1
+  - ap-southeast-1
+  - ap-northeast-1
+
+# The default number of perspectives to use.
+default-perspective-count: 6
+
+caa-domains:
+  - example-ca.example.com
+
+absolute-max-attempts: 3
+
+instances-per-region: 2
+

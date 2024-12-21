@@ -1,0 +1,45 @@
+server {
+    listen 80;
+    server_name {{public-dns}};
+
+    location = /mpic {
+        if ($http_x_api_key != "{{api-key}}") {
+            return 401;
+        }
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+    location = /dcv {
+        if ($http_x_api_key != "{{api-key}}") {
+            return 401;
+        }
+        proxy_pass http://localhost:8081;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+    location = /caa {
+        if ($http_x_api_key != "{{api-key}}") {
+            return 401;
+        }
+        proxy_pass http://localhost:8082;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    location / {
+            return      444;
+    }
+
+}
+
+server {
+    listen      80 default_server;
+    server_name _;
+    return      444;
+}
+
+

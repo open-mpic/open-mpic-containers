@@ -1,9 +1,0 @@
-fastapi[standard]>=0.113.0,<0.114.0
-pydantic>=2.7.0,<3.0.0
-requests>=2.32.3
-dnspython==2.6.1
-pydantic==2.8.2
-pyyaml==6.0.1
-aws-lambda-powertools==3.2.0
-git+https://github.com/open-mpic/open-mpic-core-python.git@main
-uvicorn>=0.22.0,<0.23.0

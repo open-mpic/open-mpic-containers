@@ -1,0 +1,101 @@
+name: open-mpic
+
+services:
+  dcv_checker_1:
+    image: ghcr.io/examplenamespace/dcv:20241218-044627  # please use your own image
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dcv1.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-1`)"
+      - "traefik.http.services.dcv1.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.strip_dcv1.stripprefix.prefixes=/dcv-checker-1"
+      - "traefik.http.routers.dcv1.middlewares=strip_dcv1@docker"
+    configs:
+      - source: dcv_config_1
+        target: /src/mpic_dcv_checker_service/config/app.conf
+
+  dcv_checker_2:
+    image: ghcr.io/examplenamespace/dcv:20241218-044627  # please use your own image
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.dcv2.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-2`)"
+      - "traefik.http.services.dcv2.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.strip_dcv2.stripprefix.prefixes=/dcv-checker-2"
+      - "traefik.http.routers.dcv2.middlewares=strip_dcv2@docker"
+    configs:
+      - source: dcv_config_2
+        target: /src/mpic_dcv_checker_service/config/app.conf
+
+  coordinator:
+    image: ghcr.io/examplenamespace/coordinator:20241218-044627  # please use your own image
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.coordinator.rule=Host(`localhost`) && PathPrefix(`/mpic-coordinator`)"
+      - "traefik.http.services.coordinator.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.strip_coordinator.stripprefix.prefixes=/mpic-coordinator"
+      - "traefik.http.routers.coordinator.middlewares=strip_coordinator@docker"
+    configs:
+      - source: coordinator_config
+        target: /src/mpic_coordinator_service/config/app.conf
+    volumes:
+      - ./resources:/src/mpic_coordinator_service/resources
+
+  caa_checker_1:
+    image: ghcr.io/examplenamespace/caa:20241218-044627  # please use your own image
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.caa1.rule=Host(`localhost`) && PathPrefix(`/caa-checker-1`)"
+      - "traefik.http.services.caa1.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.strip_caa1.stripprefix.prefixes=/caa-checker-1"
+      - "traefik.http.routers.caa1.middlewares=strip_caa1@docker"
+    configs:
+      - source: caa_config_1
+        target: /src/mpic_caa_checker_service/config/app.conf
+
+  caa_checker_2:
+    image: ghcr.io/examplenamespace/caa:20241218-044627  # please use your own image
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.caa2.rule=Host(`localhost`) && PathPrefix(`/caa-checker-2`)"
+      - "traefik.http.services.caa2.loadbalancer.server.port=80"
+      - "traefik.http.middlewares.strip_caa2.stripprefix.prefixes=/caa-checker-2"
+      - "traefik.http.routers.caa2.middlewares=strip_caa2@docker"
+    configs:
+      - source: caa_config_2
+        target: /src/mpic_caa_checker_service/config/app.conf
+
+  traefik:
+    image: traefik:v2.9
+    command:
+      - --api.insecure=true # Don't do this in production!
+      - --providers.docker=true
+      - --api.dashboard=true
+      - --providers.docker.exposedbydefault=false
+    ports:
+      # The HTTP port
+      - "8000:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
+configs:
+  dcv_config_1:
+    content: |
+      code="us-east-1"
+  dcv_config_2:
+    content: |
+      code="eu-central-1"
+  caa_config_1:
+    content: |
+      code="us-east-1"
+      default_caa_domains="example.com|example.org"
+  caa_config_2:
+    content: |
+      code="eu-central-1"
+      default_caa_domains="example.com|example.org"
+  coordinator_config:
+    content: |
+      perspectives={"us-east-1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"eu-central-1":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}
+      default_perspective_count=2
+      absolute_max_attempts=2
+      hash_secret=hash_secret

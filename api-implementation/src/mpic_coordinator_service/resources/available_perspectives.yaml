@@ -1,0 +1,11 @@
+available_regions:
+  -
+    code: "test-1"
+    name: "Test Region 1"
+    rir: "rir1"
+    too_close_codes: []
+  -
+    code: "test-2"
+    name: "Test Region 2"
+    rir: "rir2"
+    too_close_codes: []

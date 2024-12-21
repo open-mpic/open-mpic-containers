@@ -1,0 +1,42 @@
+services:
+  fastapi-coordinator:
+    build:
+      context: "open-mpic-containers/api-implementation"
+      args:
+        SERVICE_PATH: "src/mpic_coordinator_service"
+    restart: always
+    environment:
+      perspective_names: "{{perspective-names}}"
+      dcv_remotes: '{{dcv-remotes-json}}'
+      caa_remotes: '{{caa-remotes-json}}'
+      default_perspective_count: "{{default-perspective-count}}"
+      hash_secret: "{{hash-secret}}"
+      {{absoloute-max-attempts-key}}
+    ports:
+    - "127.0.0.1:8080:80/tcp"
+    volumes:
+      - ./available_perspectives.yaml:/src/mpic_coordinator_service/resources/available_perspectives.yaml
+  fastapi-dcv:
+    build:
+      context: "open-mpic-containers/api-implementation"
+      args:
+        SERVICE_PATH: "src/mpic_dcv_checker_service"
+    restart: always
+    environment:
+      rir_region: "{{rir}}"
+      code: "{{code}}"
+    ports:
+    - "127.0.0.1:8081:80/tcp"
+  fastapi-caa:
+    build:
+      context: "open-mpic-containers/api-implementation"
+      args:
+        SERVICE_PATH: "src/mpic_caa_checker_service"
+    restart: always
+    environment:
+      rir_region: "{{rir}}"
+      code: "{{code}}"
+      default_caa_domains: "{{default-caa-domains}}"
+    ports:
+    - "127.0.0.1:8082:80/tcp"
+

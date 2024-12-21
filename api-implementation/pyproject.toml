@@ -1,0 +1,131 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[project]
+name = "open-mpic-restapi-server"
+dynamic = ["version"]
+description = 'MPIC standard API implementation leveraging FastAPI and Docker.'
+readme = "README.md"
+requires-python = "==3.11.9"
+license = "MIT"
+keywords = []
+authors = [
+    { name = "Henry Birge-Lee", email = "henrybirgelee@gmail.com" },
+    { name = "Grace Cimaszewski", email = "ghc2@princeton.edu" },
+    { name = "Dmitry Sharkov", email = "dmitry.sharkov@sectigo.com" },
+    { name = "Alan Hanafy", email = "alan.hanafy@sectigo.com" }
+]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    #"open-mpic-core @ git+https://github.com/open-mpic/open-mpic-core-python.git@main",
+    "pyyaml==6.0.1",
+    "requests>=2.32.3",
+    "dnspython==2.6.1",
+    "pydantic==2.8.2",
+    "fastapi[standard]>=0.113.0,<0.114.0",
+    "open-mpic-core==3.0.0",
+    "uvicorn>=0.22.0,<0.23.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest==8.2.2",
+    "pytest-cov==5.0.0",
+    "pytest-mock==3.14.0",
+    "pytest-html==4.1.1",
+]
+
+[project.urls]
+Documentation = "https://github.com/open-mpic/open-mpic-restapi-server"
+Issues = "https://github.com/open-mpic/open-mpic-restapi-server/issues"
+Source = "https://github.com/open-mpic/open-mpic-restapi-server"
+
+[tool.hatch]
+version.path = "src/__about__.py"
+build.sources = ["src"]
+build.targets.wheel.packages = ["src"]
+
+[tool.hatch.envs.default]
+skip-install = false
+type="virtual"
+path="../venv"
+
+[tool.hatch.envs.default.env-vars]
+PIP_INDEX_URL = "https://pypi.org/simple/"
+PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"  # FIXME here temporarily to test open-mpic-core packaging
+PIP_VERBOSE = "1"
+
+[tool.hatch.envs.docker]
+skip-install = true
+python = "3.11"
+type="virtual"
+path="docker_venv"
+
+[tool.hatch.envs.docker.env-vars]
+PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
+PIP_ONLY_BINARY = ":all:"
+
+[tool.hatch.envs.docker.scripts]
+install = "pip install . --no-cache-dir --upgrade"
+
+[tool.hatch.envs.test]
+skip-install = false
+features = [
+    "test",
+]
+installer = "pip"
+
+[tool.hatch.envs.test.env-vars]
+PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
+
+[tool.hatch.envs.test.scripts]
+pre-install = "python -m ensurepip"
+unit = "pytest"
+unit-html = "pytest --html=testreports/index.html" # generate html report (warning: uses an aging plugin, 11-2023)
+integration = "pytest tests/integration"
+coverage = "pytest --cov=src --cov-report=term-missing --cov-report=html"
+
+[tool.hatch.envs.hatch-test]
+default-args = ["tests/unit"]
+randomize = true
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "src", "tests", "." # need root directory because it has some python utility files we are importing for integration tests
+]
+testpaths = [
+    "tests/unit"
+]
+python_functions = [
+    "*_should_*",
+]
+markers = [
+    "integration: mark test as an integration test",
+    "unit: mark test as a unit test",  # optional
+]
+addopts = [
+    "--import-mode=prepend",  # explicit default, as the tests rely on it for proper import resolution
+]
+spec_header_format = "Spec for {test_case} ({path}):"
+spec_test_format = "{result} {docstring_summary}"  # defaults to {name} if docstring is not present in test
+
+[tool.coverage.run]
+source = [
+    "src"
+]
+
+[tool.coverage.report]
+include_namespace_packages = true
+omit = [
+    "*/src/*/__about__.py",
+]
