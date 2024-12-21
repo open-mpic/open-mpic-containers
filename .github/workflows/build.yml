@@ -70,7 +70,7 @@ jobs:
         context: api-implementation
         platforms: ${{ matrix.platform }}
         build-args: PYTHON_VERSION=${{ steps.python-version.outputs.PYTHON_VERSION }} SERVICE_PATH=src/mpic_${{ matrix.service }}_service
-        file: ${{ matrix.service }}/Dockerfile
+        file: api-implementation/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
