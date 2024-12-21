@@ -49,7 +49,7 @@ jobs:
     - name: Get Python Version
       id: python-version
       # read the ${{ matrix.service }}/.python-version file and load the version into a variable that is used in the next step
-      run: echo "PYTHON_VERSION=$(cat ${{ matrix.service }}/.python-version)" >> $GITHUB_OUTPUT
+      run: echo "PYTHON_VERSION=$(cat api-implementation/src/mpic_${{ matrix.service }}_service/.python-version)" >> $GITHUB_OUTPUT
       # the variable is now available as $PYTHON_VERSION
 
     # This step sets up QEMU for cross-platform builds.
