@@ -69,7 +69,9 @@ jobs:
       with:
         context: api-implementation
         platforms: ${{ matrix.platform }}
-        build-args: PYTHON_VERSION=${{ steps.python-version.outputs.PYTHON_VERSION }} SERVICE_PATH=src/mpic_${{ matrix.service }}_service
+        build-args: |
+          PYTHON_VERSION=${{ steps.python-version.outputs.PYTHON_VERSION }}
+          SERVICE_PATH=src/mpic_${{ matrix.service }}_service
         file: api-implementation/Dockerfile
         push: true
         tags: ${{ steps.meta.outputs.tags }}
