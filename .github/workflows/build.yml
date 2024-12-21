@@ -67,7 +67,7 @@ jobs:
       id: push
       uses: docker/build-push-action@v6
       with:
-        context: api-integration
+        context: api-implementation
         platforms: ${{ matrix.platform }}
         build-args: PYTHON_VERSION=${{ steps.python-version.outputs.PYTHON_VERSION }} SERVICE_PATH=src/mpic_${{ matrix.service }}_service
         file: ${{ matrix.service }}/Dockerfile
