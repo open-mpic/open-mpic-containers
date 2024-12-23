@@ -60,15 +60,10 @@ path="../venv"
 
 [tool.hatch.envs.default.env-vars]
 PIP_INDEX_URL = "https://pypi.org/simple/"
-#PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"  # here temporarily to test open-mpic-core packaging
 PIP_VERBOSE = "1"
 
 [tool.hatch.envs.production]
 dev-mode=false
-#python = "3.13"
-#dependencies = [
-#    "{root[dependencies]}"
-#]
 
 [tool.hatch.envs.test]
 skip-install = false
@@ -76,9 +71,6 @@ features = [
     "test",
 ]
 installer = "pip"
-
-[tool.hatch.envs.test.env-vars]
-#PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
 
 [tool.hatch.envs.test.scripts]
 pre-install = "python -m ensurepip"
