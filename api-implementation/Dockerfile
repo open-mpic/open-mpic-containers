@@ -10,7 +10,7 @@ RUN echo "building service from path: ${SERVICE_PATH}"
 RUN pip install hatch
 
 # Set the working directory -- should create /src/mpic_{service_name}_service
-WORKDIR ${SERVICE_PATH}
+WORKDIR /${SERVICE_PATH}
 
 # Copy just pyproject.toml first for better layer caching
 COPY pyproject.toml .
@@ -23,4 +23,4 @@ COPY ${SERVICE_PATH}/app ./app
 RUN hatch env create production
 
 # Run the service using uvicorn with the production environment
-CMD hatch env run -e production -- uvicorn "app.main:app" --host "0.0.0.0" --port "80" --proxy-headers
+CMD ["hatch", "env", "run", "-e", "production", "--", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers"]
