@@ -17,7 +17,9 @@ import os
 import traceback
 from dotenv import load_dotenv
 
-load_dotenv("config/app.conf")
+# 'config' directory should be a sibling of the directory containing this file
+config_path = Path(__file__).parent.parent / 'config' / 'app.conf'
+load_dotenv(config_path)
 
 
 class PerspectiveEndpointInfo(BaseModel):
@@ -69,6 +71,7 @@ class MpicCoordinatorService:
     def load_available_perspectives_config() -> dict[str, RemotePerspective]:
         """
         Reads in the available perspectives from a configuration yaml and returns them as a dict (map).
+        Expects the yaml to be in the resources folder, next to the app folder containing this file.
         :return: dict of available perspectives with region code as key
         """
         resource_path = Path(__file__).parent.parent / 'resources' / 'available_perspectives.yaml'
