@@ -8,7 +8,7 @@ import os
 from dotenv import load_dotenv
 
 # 'config' directory should be a sibling of the directory containing this file
-config_path = Path(__file__).parent.parent / 'config' / 'app.conf'
+config_path = Path(__file__).parent / 'config' / 'app.conf'
 load_dotenv(config_path)
 
 
