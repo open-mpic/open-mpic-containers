@@ -1,4 +1,5 @@
 from fastapi import FastAPI  # type: ignore
+from pathlib import Path
 
 from open_mpic_core.common_domain.check_request import CaaCheckRequest
 from open_mpic_core.mpic_caa_checker.mpic_caa_checker import MpicCaaChecker
@@ -6,7 +7,10 @@ from open_mpic_core.mpic_caa_checker.mpic_caa_checker import MpicCaaChecker
 import os
 from dotenv import load_dotenv
 
-load_dotenv("config/app.conf")
+
+# 'config' directory should be a sibling of the directory containing this file
+config_path = Path(__file__).parent / 'config' / 'app.conf'
+load_dotenv(config_path)
 
 
 class MpicCaaCheckerService:

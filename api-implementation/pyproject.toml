@@ -7,10 +7,9 @@ allow-direct-references = true
 
 [project]
 name = "open-mpic-restapi-server"
-dynamic = ["version"]
+version = "0.1.0"
 description = 'MPIC standard API implementation leveraging FastAPI and Docker.'
-readme = "README.md"
-requires-python = "==3.11.9"
+requires-python = ">=3.11"
 license = "MIT"
 keywords = []
 authors = [
@@ -33,7 +32,7 @@ dependencies = [
     "dnspython==2.6.1",
     "pydantic==2.8.2",
     "fastapi[standard]>=0.113.0,<0.114.0",
-    "open-mpic-core==3.0.0",
+    "open-mpic-core==3.0.2",
     "uvicorn>=0.22.0,<0.23.0",
 ]
 
@@ -51,7 +50,6 @@ Issues = "https://github.com/open-mpic/open-mpic-restapi-server/issues"
 Source = "https://github.com/open-mpic/open-mpic-restapi-server"
 
 [tool.hatch]
-version.path = "src/__about__.py"
 build.sources = ["src"]
 build.targets.wheel.packages = ["src"]
 
@@ -62,21 +60,10 @@ path="../venv"
 
 [tool.hatch.envs.default.env-vars]
 PIP_INDEX_URL = "https://pypi.org/simple/"
-PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"  # FIXME here temporarily to test open-mpic-core packaging
 PIP_VERBOSE = "1"
 
-[tool.hatch.envs.docker]
-skip-install = true
-python = "3.11"
-type="virtual"
-path="docker_venv"
-
-[tool.hatch.envs.docker.env-vars]
-PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
-PIP_ONLY_BINARY = ":all:"
-
-[tool.hatch.envs.docker.scripts]
-install = "pip install . --no-cache-dir --upgrade"
+[tool.hatch.envs.production]
+dev-mode=false
 
 [tool.hatch.envs.test]
 skip-install = false
@@ -84,9 +71,6 @@ features = [
     "test",
 ]
 installer = "pip"
-
-[tool.hatch.envs.test.env-vars]
-PIP_EXTRA_INDEX_URL = "https://test.pypi.org/simple/"
 
 [tool.hatch.envs.test.scripts]
 pre-install = "python -m ensurepip"
