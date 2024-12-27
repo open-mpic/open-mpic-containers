@@ -1,7 +1,12 @@
 import json
 from pathlib import Path
+from typing import Union
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, status, HTTPException
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
+from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import MpicRequestValidationError
+from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import MpicRequestValidationMessages
 
 from pydantic import TypeAdapter, ValidationError, BaseModel, Field
 from open_mpic_core.common_domain.check_request import BaseCheckRequest
@@ -10,6 +15,7 @@ from open_mpic_core.mpic_coordinator.domain.mpic_request import MpicRequest
 from open_mpic_core.mpic_coordinator.mpic_coordinator import MpicCoordinator, MpicCoordinatorConfiguration
 from open_mpic_core.common_domain.enum.check_type import CheckType
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
+from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
 
 import yaml
 import requests
@@ -101,31 +107,12 @@ class MpicCoordinatorService:
     def call_remote_perspective(self, perspective: RemotePerspective, check_type: CheckType, check_request: BaseCheckRequest) -> CheckResponse:
         # Get the remote info from the data structure.
         endpoint_info: PerspectiveEndpointInfo = self.remotes_per_perspective_per_check_type[check_type][perspective.code]
+        r = requests.post(endpoint_info.url, timeout=3, headers=endpoint_info.headers, json=check_request.model_dump())
+        # TODO think through error handling here... what do we expect and how do we test it?
+        return self.check_response_adapter.validate_json(r.text)
 
-        try:
-            r = requests.post(endpoint_info.url, timeout=3, headers=endpoint_info.headers, json=check_request.model_dump())
-
-            return self.check_response_adapter.validate_json(r.text)
-        except requests.exceptions.RequestException:
-            print(traceback.format_exc())
-        except ValidationError:
-            print(traceback.format_exc())
-
-    def perform_mpic(self, mpic_request: MpicRequest) -> dict:
+    def perform_mpic(self, mpic_request: MpicRequest) -> MpicResponse:
         return self.mpic_coordinator.coordinate_mpic(mpic_request)
-        # try:
-        #     mpic_response = self.mpic_coordinator_service.coordinate_mpic(mpic_request)
-        #     return {
-        #         'statusCode': 200,
-        #         'headers': {'Content-Type': 'application/json'},
-        #         'body': mpic_response.model_dump_json()
-        #     }
-        # except MpicRequestValidationError as e:  # TODO catch ALL exceptions here?
-        #     return {
-        #         'statusCode': 500,
-        #         'headers': {'Content-Type': 'application/json'},
-        #         'body': json.dumps({'error': str(e)})
-        #     }
 
 
 # Global instance for Service
@@ -142,19 +129,45 @@ def get_service() -> MpicCoordinatorService:
     return _service
 
 
-# TODO We need to find a way to bring back transparent error messages with this new parsing model.
-#      If the parsing to the MPIC request fails, it returns system internal server errors instead of returning
-#      the pydantic error message.
-# noinspection PyUnusedLocal
-# for now, we are not using context, but it is required by the lambda handler signature
-# @event_parser(model=MpicRequest, envelope=envelopes.ApiGatewayEnvelope)  # AWS Lambda Powertools decorator
-# def lambda_handler(event: MpicRequest, context):  # AWS Lambda entry point
-#    return get_handler().process_invocation(event)
-
-
 app = FastAPI()
 
 
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, e: RequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,  # If you want to use 400 instead of 422
+        content={
+            "error": MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key,
+            "validation_issues": e.errors()
+        }
+    )
+
+
+@app.exception_handler(MpicRequestValidationError)
+async def mpic_validation_exception_handler(request: Request, e: MpicRequestValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,  # If you want to use 400 instead of 422
+        content={
+            "error": MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key,
+            "validation_issues": json.loads(e.__notes__[0])
+        }
+    )
+
+
+@app.middleware("http")  # This is a middleware that catches general exceptions and returns a 500 response
+async def exception_handling_middleware(request: Request, call_next):
+    try:
+        return await call_next(request)
+    except Exception as e:
+        # Do some logging here
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={
+                "error": str(e)
+            }
+        )
+
+
 @app.post("/mpic")
-def perform_mpic(request: MpicRequest):
+def handle_mpic(request: MpicRequest):
     return get_service().perform_mpic(request)

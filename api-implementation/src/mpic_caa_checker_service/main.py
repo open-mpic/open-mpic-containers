@@ -21,12 +21,6 @@ class MpicCaaCheckerService:
 
     def check_caa(self, caa_request: CaaCheckRequest):
         return self.caa_checker.check_caa(caa_request)
-        # result = {
-        #     'statusCode': 200,  # note: must be snakeCase
-        #     'headers': {'Content-Type': 'application/json'},
-        #     'body': caa_response.model_dump_json()
-        # }
-        # return result
 
 
 # Global instance for Lambda runtime
@@ -47,5 +41,5 @@ app = FastAPI()
 
 
 @app.post("/caa")
-def perform_mpic(request: CaaCheckRequest):
+def handle_caa_check(request: CaaCheckRequest):
     return get_service().check_caa(request)
