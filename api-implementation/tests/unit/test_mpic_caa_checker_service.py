@@ -1,11 +1,13 @@
 import time
-
 import pytest
+
 from fastapi import status
+from fastapi.testclient import TestClient
+
 from open_mpic_core.common_domain.check_response import CaaCheckResponse
 from open_mpic_core.common_domain.check_response_details import CaaCheckResponseDetails
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
-from fastapi.testclient import TestClient
+
 from mpic_caa_checker_service.main import MpicCaaCheckerService, app
 
 

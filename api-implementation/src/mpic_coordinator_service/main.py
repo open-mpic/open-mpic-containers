@@ -1,14 +1,13 @@
 import json
 from pathlib import Path
-from typing import Union
 
-from fastapi import FastAPI, Request, status, HTTPException
+from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import MpicRequestValidationError
 from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import MpicRequestValidationMessages
 
-from pydantic import TypeAdapter, ValidationError, BaseModel, Field
+from pydantic import TypeAdapter, BaseModel, Field
 from open_mpic_core.common_domain.check_request import BaseCheckRequest
 from open_mpic_core.common_domain.check_response import CheckResponse
 from open_mpic_core.mpic_coordinator.domain.mpic_request import MpicRequest
@@ -20,7 +19,6 @@ from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
 import yaml
 import requests
 import os
-import traceback
 from dotenv import load_dotenv
 
 # 'config' directory should be a sibling of the directory containing this file
@@ -132,6 +130,7 @@ def get_service() -> MpicCoordinatorService:
 app = FastAPI()
 
 
+# noinspection PyUnusedLocal
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request: Request, e: RequestValidationError):
     return JSONResponse(
@@ -143,6 +142,7 @@ async def validation_exception_handler(request: Request, e: RequestValidationErr
     )
 
 
+# noinspection PyUnusedLocal
 @app.exception_handler(MpicRequestValidationError)
 async def mpic_validation_exception_handler(request: Request, e: MpicRequestValidationError):
     return JSONResponse(
