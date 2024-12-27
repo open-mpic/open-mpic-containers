@@ -32,7 +32,7 @@ dependencies = [
     "dnspython==2.6.1",
     "pydantic==2.8.2",
     "fastapi[standard]>=0.113.0,<0.114.0",
-    "open-mpic-core==3.0.2",
+    "open-mpic-core==3.1.0",
     "uvicorn>=0.22.0,<0.23.0",
 ]
 
@@ -85,7 +85,7 @@ randomize = true
 
 [tool.pytest.ini_options]
 pythonpath = [
-    "src", "tests", "." # need root directory because it has some python utility files we are importing for integration tests
+    "src", "tests"
 ]
 testpaths = [
     "tests/unit"
@@ -100,8 +100,6 @@ markers = [
 addopts = [
     "--import-mode=prepend",  # explicit default, as the tests rely on it for proper import resolution
 ]
-spec_header_format = "Spec for {test_case} ({path}):"
-spec_test_format = "{result} {docstring_summary}"  # defaults to {name} if docstring is not present in test
 
 [tool.coverage.run]
 source = [

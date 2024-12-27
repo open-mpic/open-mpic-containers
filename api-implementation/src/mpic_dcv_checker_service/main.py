@@ -1,11 +1,13 @@
-from fastapi import FastAPI
+import os
+
 from pathlib import Path
+from dotenv import load_dotenv
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse
 
 from open_mpic_core.common_domain.check_request import DcvCheckRequest
 from open_mpic_core.mpic_dcv_checker.mpic_dcv_checker import MpicDcvChecker
 
-import os
-from dotenv import load_dotenv
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
@@ -18,19 +20,18 @@ class MpicDcvCheckerService:
         self.dcv_checker = MpicDcvChecker(self.perspective_code)
 
     def check_dcv(self, dcv_request: DcvCheckRequest):
-        return self.dcv_checker.check_dcv(dcv_request)
-        # status_code = 200
-        # if dcv_response.errors is not None and len(dcv_response.errors) > 0:
-        #     if dcv_response.errors[0].error_type == '404':
-        #         status_code = 404
-        #     else:
-        #         status_code = 500
-        # result = {
-        #     'statusCode': status_code,
-        #     'headers': {'Content-Type': 'application/json'},
-        #     'body': dcv_response.model_dump_json()
-        # }
-        # return result
+        result = self.dcv_checker.check_dcv(dcv_request)
+        if result.errors is not None and len(result.errors) > 0:
+            if result.errors[0].error_type == '404':
+                status_code = status.HTTP_404_NOT_FOUND
+            else:
+                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+
+            result = JSONResponse(
+                status_code=status_code,  # If you want to use 400 instead of 422
+                content=result.model_dump()
+            )
+        return result
 
 
 # Global instance for Service
