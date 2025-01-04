@@ -36,6 +36,8 @@ class MpicCoordinatorService:
     def __init__(self):
         # load environment variables
         perspectives_json = os.environ['perspectives']
+        print("Using perspectives json:")
+        print(perspectives_json)
         perspectives = {code: PerspectiveEndpoints.model_validate(endpoints) for code, endpoints in json.loads(perspectives_json).items()}
         self.all_target_perspective_codes = list(perspectives.keys())
         self.default_perspective_count = int(os.environ['default_perspective_count'])
