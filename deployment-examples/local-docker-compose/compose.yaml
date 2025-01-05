@@ -9,11 +9,11 @@ services:
       - "traefik.http.services.dcv1.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_dcv1.stripprefix.prefixes=/dcv-checker-1"
       - "traefik.http.routers.dcv1.middlewares=strip_dcv1@docker"
-    #configs:
-    #  - source: dcv_config_1
-    #    target: /app/config/app.conf
-    volumes:
-      - ./dcv_1.app.conf:/app/config/app.conf
+    configs:
+      - source: dcv_config_1
+        target: /app/config/app.conf
+    #volumes:
+    #  - ./dcv_1.app.conf:/app/config/app.conf
 
   dcv_checker_2:
     image: birgelee/mpicdcvchecker  # please use your own image
@@ -23,11 +23,11 @@ services:
       - "traefik.http.services.dcv2.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_dcv2.stripprefix.prefixes=/dcv-checker-2"
       - "traefik.http.routers.dcv2.middlewares=strip_dcv2@docker"
-    #configs:
-    #  - source: dcv_config_2
-    #    target: /src/mpic_dcv_checker_service/config/app.conf
-    volumes:
-      - ./dcv_2.app.conf:/app/config/app.conf
+    configs:
+      - source: dcv_config_2
+        target: /app/config/app.conf
+    #volumes:
+    #  - ./dcv_2.app.conf:/app/config/app.conf
 
   coordinator:
     image: birgelee/mpiccoordinator:v2 # please use your own image
@@ -37,12 +37,12 @@ services:
       - "traefik.http.services.coordinator.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_coordinator.stripprefix.prefixes=/mpic-coordinator"
       - "traefik.http.routers.coordinator.middlewares=strip_coordinator@docker"
-    #configs:
-    #  - source: coordinator_config
-    #    target: /src/mpic_coordinator_service/config/app.conf
+    configs:
+      - source: coordinator_config
+        target: /app/config/app.conf
     volumes:
       - ./resources:/app/resources
-      - ./coordinator.app.conf:/app/config/app.conf
+    #  - ./coordinator.app.conf:/app/config/app.conf
 
   caa_checker_1:
     image: birgelee/mpiccaachecker  # please use your own image
@@ -52,11 +52,11 @@ services:
       - "traefik.http.services.caa1.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_caa1.stripprefix.prefixes=/caa-checker-1"
       - "traefik.http.routers.caa1.middlewares=strip_caa1@docker"
-    #configs:
-    #  - source: caa_config_1
-    #    target: /src/mpic_caa_checker_service/config/app.conf
-    volumes:
-      - ./caa_1.app.conf:/app/config/app.conf
+    configs:
+      - source: caa_config_1
+        target: /src/mpic_caa_checker_service/config/app.conf
+    #volumes:
+    #  - ./caa_1.app.conf:/app/config/app.conf
 
   caa_checker_2:
     image: birgelee/mpiccaachecker  # please use your own image
@@ -66,11 +66,11 @@ services:
       - "traefik.http.services.caa2.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_caa2.stripprefix.prefixes=/caa-checker-2"
       - "traefik.http.routers.caa2.middlewares=strip_caa2@docker"
-    #configs:
-    #  - source: caa_config_2
-    #    target: /src/mpic_caa_checker_service/config/app.conf
-    volumes:
-      - ./caa_2.app.conf:/app/config/app.conf
+    configs:
+      - source: caa_config_2
+        target: /src/mpic_caa_checker_service/config/app.conf
+    #volumes:
+    #  - ./caa_2.app.conf:/app/config/app.conf
 
   traefik:
     image: traefik:v2.9
@@ -90,21 +90,21 @@ services:
 configs:
   dcv_config_1:
     content: |
-      code="us-east-1"
+      code="test1"
   dcv_config_2:
     content: |
-      code="eu-central-1"
+      code="test2"
   caa_config_1:
     content: |
-      code="us-east-1"
+      code="test1"
       default_caa_domains="example.com|example.org"
   caa_config_2:
     content: |
-      code="eu-central-1"
+      code="test2"
       default_caa_domains="example.com|example.org"
   coordinator_config:
     content: |
-      perspectives={"us-east-1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"eu-central-1":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}
+      perspectives={"test1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"test2":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}
       default_perspective_count=2
       absolute_max_attempts=2
       hash_secret=hash_secret
