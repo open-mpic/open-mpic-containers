@@ -2,7 +2,7 @@ name: open-mpic
 
 services:
   dcv_checker_1:
-    image: ghcr.io/examplenamespace/dcv:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/dcv_checker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dcv1.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-1`)"
@@ -14,7 +14,7 @@ services:
         target: /src/mpic_dcv_checker_service/config/app.conf
 
   dcv_checker_2:
-    image: ghcr.io/examplenamespace/dcv:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/dcv_checker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dcv2.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-2`)"
@@ -26,7 +26,7 @@ services:
         target: /src/mpic_dcv_checker_service/config/app.conf
 
   coordinator:
-    image: ghcr.io/examplenamespace/coordinator:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/coordinator:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.coordinator.rule=Host(`localhost`) && PathPrefix(`/mpic-coordinator`)"
@@ -40,7 +40,7 @@ services:
       - ./resources:/src/mpic_coordinator_service/resources
 
   caa_checker_1:
-    image: ghcr.io/examplenamespace/caa:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/caa_checker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.caa1.rule=Host(`localhost`) && PathPrefix(`/caa-checker-1`)"
@@ -52,7 +52,7 @@ services:
         target: /src/mpic_caa_checker_service/config/app.conf
 
   caa_checker_2:
-    image: ghcr.io/examplenamespace/caa:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/caa_checker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.caa2.rule=Host(`localhost`) && PathPrefix(`/caa-checker-2`)"
