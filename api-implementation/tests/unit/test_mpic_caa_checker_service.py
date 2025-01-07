@@ -28,7 +28,7 @@ class TestMpicCaaCheckerService:
             yield class_scoped_monkeypatch  # restore the environment afterward
 
     # noinspection PyMethodMayBeStatic
-    async def service__should_do_caa_check_using_configured_caa_checker(self, set_env_variables, mocker):
+    def service__should_do_caa_check_using_configured_caa_checker(self, set_env_variables, mocker):
         mock_caa_result = TestMpicCaaCheckerService.create_caa_check_response()
 
         # Use AsyncMock for async function

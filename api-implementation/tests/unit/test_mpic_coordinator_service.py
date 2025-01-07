@@ -1,6 +1,5 @@
 import asyncio
 import json
-from asyncio import StreamReader
 
 import yaml
 import pytest
@@ -116,11 +115,12 @@ class TestMpicCoordinatorService:
         # it'll read in the placeholder values in the config files -- that's acceptable for this particular test
         assert mpic_coordinator_service.hash_secret == 'HASH_SECRET_STRING'
 
-    def service__should_return_400_error_and_details_given_invalid_request_body(self, set_env_variables):
+    async def service__should_return_400_error_and_details_given_invalid_request_body(self, set_env_variables):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
         # noinspection PyTypeChecker
         request.domain_or_ip_target = None
-        response = client.post('/mpic', json=request.model_dump())
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == 400
         result_body = json.loads(response.text)
         assert result_body['validation_issues'][0]['type'] == 'string_type'
@@ -128,7 +128,8 @@ class TestMpicCoordinatorService:
     def service__should_return_400_error_and_details_given_invalid_check_type(self, set_env_variables):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
         request.check_type = 'invalid_check_type'
-        response = client.post('/mpic', json=request.model_dump())
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == 400
         result_body = json.loads(response.text)
         assert result_body['validation_issues'][0]['type'] == 'literal_error'
@@ -136,24 +137,32 @@ class TestMpicCoordinatorService:
     def service__should_return_400_error_given_logically_invalid_request(self, set_env_variables):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
         request.orchestration_parameters.perspective_count = 1
-        response = client.post('/mpic', json=request.model_dump())
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == 400
         result_body = json.loads(response.text)
         assert result_body['validation_issues'][0]['issue_type'] == 'invalid-perspective-count'
 
     def service__should_return_500_error_given_other_unexpected_errors(self, set_env_variables, mocker):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
-        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic',
-                     side_effect=Exception('Something went wrong'))
-        response = client.post('/mpic', json=request.model_dump())
+
+        # Use AsyncMock for async function
+        mock = AsyncMock(side_effect=Exception('Something went wrong'))
+        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=mock)
+
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == 500
 
     def service__should_coordinate_mpic_using_configured_mpic_coordinator(self, set_env_variables, mocker):
-        mpic_request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
+        request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
         mock_return_value = TestMpicCoordinatorService.create_caa_mpic_response()
-        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic',
-                     return_value=mock_return_value)
-        response = client.post('/mpic', json=mpic_request.model_dump())
+
+        mock = AsyncMock(return_value=mock_return_value)
+        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=mock)
+
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == status.HTTP_200_OK
         result_body = json.loads(response.text)
         assert result_body['is_valid'] is True
