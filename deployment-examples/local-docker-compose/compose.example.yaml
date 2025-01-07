@@ -35,9 +35,9 @@ services:
       - "traefik.http.routers.coordinator.middlewares=strip_coordinator@docker"
     configs:
       - source: coordinator_config
-        target: /src/mpic_coordinator_service/config/app.conf
+        target: /app/config/app.conf
     volumes:
-      - ./resources:/src/mpic_coordinator_service/resources
+      - ./resources:/app/resources
 
   caa_checker_1:
     image: ghcr.io/open-mpic/caa_checker:latest
