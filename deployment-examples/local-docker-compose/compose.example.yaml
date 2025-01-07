@@ -81,21 +81,21 @@ services:
 configs:
   dcv_config_1:
     content: |
-      code="us-east-1"
+      code="example-region-1"
   dcv_config_2:
     content: |
-      code="eu-central-1"
+      code="example-region-2"
   caa_config_1:
     content: |
-      code="us-east-1"
+      code="example-region-1"
       default_caa_domains="example.com|example.org"
   caa_config_2:
     content: |
-      code="eu-central-1"
+      code="example-region-2"
       default_caa_domains="example.com|example.org"
   coordinator_config:
     content: |
-      perspectives={"us-east-1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"eu-central-1":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}
+      perspectives={"example-region-1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"example-region-2":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}
       default_perspective_count=2
       absolute_max_attempts=2
       hash_secret=hash_secret
