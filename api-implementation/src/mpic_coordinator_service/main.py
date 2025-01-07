@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 
 import yaml
 import aiohttp
-import requests
 
 from dotenv import load_dotenv
 from pathlib import Path
@@ -147,6 +146,7 @@ def get_service() -> MpicCoordinatorService:
     return _service
 
 
+# noinspection PyUnusedLocal
 @asynccontextmanager
 async def lifespan(app_instance: FastAPI):
     # Initialize services

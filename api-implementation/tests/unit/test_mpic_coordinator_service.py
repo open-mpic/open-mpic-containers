@@ -147,8 +147,8 @@ class TestMpicCoordinatorService:
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
 
         # Use AsyncMock for async function
-        mock = AsyncMock(side_effect=Exception('Something went wrong'))
-        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=mock)
+        awaitable_result = AsyncMock(side_effect=Exception('Something went wrong'))
+        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=awaitable_result)
 
         with TestClient(app) as client:
             response = client.post('/mpic', json=request.model_dump())
@@ -156,10 +156,10 @@ class TestMpicCoordinatorService:
 
     def service__should_coordinate_mpic_using_configured_mpic_coordinator(self, set_env_variables, mocker):
         request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
-        mock_return_value = TestMpicCoordinatorService.create_caa_mpic_response()
+        mock_response = TestMpicCoordinatorService.create_caa_mpic_response()
 
-        mock = AsyncMock(return_value=mock_return_value)
-        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=mock)
+        awaitable_mock_response = AsyncMock(return_value=mock_response)
+        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=awaitable_mock_response)
 
         with TestClient(app) as client:
             response = client.post('/mpic', json=request.model_dump())
@@ -218,18 +218,13 @@ class TestMpicCoordinatorService:
             method='GET', url=URL('http://example.com'), writer=AsyncMock(), continue100=None,
             timer=AsyncMock(), request_info=AsyncMock(), traces=[], loop=event_loop, session=AsyncMock()
         )
-        response.status = status_code
-
         headers = {
             'Content-Type': 'application/json',
             'Content-Length': str(len(content))
         }
-        # response.content = StreamReader(loop=event_loop)
-        # response.content.feed_data(bytes(content.encode('utf-8')))
-        # response.content.feed_eof()
 
+        response.status = status_code
         response._body = content.encode('utf-8')
-
         response._headers = CIMultiDictProxy(CIMultiDict(headers))
 
         return response

@@ -1,4 +1,6 @@
 import time
+from unittest.mock import AsyncMock
+
 import pytest
 
 from fastapi import status
@@ -10,9 +12,6 @@ from open_mpic_core.common_domain.validation_error import MpicValidationError
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
 
 from mpic_dcv_checker_service.main import MpicDcvCheckerService, app
-
-
-client = TestClient(app)
 
 
 # noinspection PyMethodMayBeStatic
@@ -38,9 +37,14 @@ class TestMpicDcvCheckerService:
     def service__should_do_dcv_check_using_configured_dcv_checker(self, set_env_variables, mocker):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
         mock_dcv_response = TestMpicDcvCheckerService.create_dcv_check_response()
-        mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.check_dcv',
-                     return_value=mock_dcv_response)
-        response = client.post('/dcv', json=dcv_check_request.model_dump())
+
+        # Use AsyncMock for async function
+        awaitable_mock_response = AsyncMock(return_value=mock_dcv_response)
+        mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.check_dcv', new=awaitable_mock_response)
+
+        with TestClient(app) as client:
+            response = client.post('/dcv', json=dcv_check_request.model_dump())
+
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == mock_dcv_response.model_dump()
 
@@ -53,10 +57,15 @@ class TestMpicDcvCheckerService:
         mock_dcv_response = TestMpicDcvCheckerService.create_dcv_check_response()
         mock_dcv_response.check_passed = False
         mock_dcv_response.errors = [(MpicValidationError(error_type=error_type, error_message=error_message))]
-        mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.check_dcv',
-                     return_value=mock_dcv_response)
+
+        awaitable_mock_response = AsyncMock(return_value=mock_dcv_response)
+        mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.check_dcv', new=awaitable_mock_response)
+
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
-        response = client.post('/dcv', json=dcv_check_request.model_dump())
+
+        with TestClient(app) as client:
+            response = client.post('/dcv', json=dcv_check_request.model_dump())
+            
         assert response.status_code == expected_status_code
         assert response.json() == mock_dcv_response.model_dump()
 
