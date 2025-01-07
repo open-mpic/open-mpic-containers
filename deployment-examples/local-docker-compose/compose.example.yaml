@@ -11,7 +11,7 @@ services:
       - "traefik.http.routers.dcv1.middlewares=strip_dcv1@docker"
     configs:
       - source: dcv_config_1
-        target: /src/mpic_dcv_checker_service/config/app.conf
+        target: /app/config/app.conf
 
   dcv_checker_2:
     image: ghcr.io/open-mpic/dcv_checker:latest
@@ -23,7 +23,7 @@ services:
       - "traefik.http.routers.dcv2.middlewares=strip_dcv2@docker"
     configs:
       - source: dcv_config_2
-        target: /src/mpic_dcv_checker_service/config/app.conf
+        target: /app/config/app.conf
 
   coordinator:
     image: ghcr.io/open-mpic/coordinator:latest
@@ -49,7 +49,7 @@ services:
       - "traefik.http.routers.caa1.middlewares=strip_caa1@docker"
     configs:
       - source: caa_config_1
-        target: /src/mpic_caa_checker_service/config/app.conf
+        target: /app/config/app.conf
 
   caa_checker_2:
     image: ghcr.io/open-mpic/caa_checker:latest
@@ -61,7 +61,7 @@ services:
       - "traefik.http.routers.caa2.middlewares=strip_caa2@docker"
     configs:
       - source: caa_config_2
-        target: /src/mpic_caa_checker_service/config/app.conf
+        target: /app/config/app.conf
 
   traefik:
     image: traefik:v2.9
