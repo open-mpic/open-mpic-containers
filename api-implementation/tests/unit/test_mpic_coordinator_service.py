@@ -1,12 +1,18 @@
+import asyncio
 import json
+from asyncio import StreamReader
+
 import yaml
 import pytest
 
 from importlib import resources
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock
+
+from aiohttp import ClientResponse
 from fastapi import status
 from fastapi.testclient import TestClient
+from multidict import CIMultiDictProxy, CIMultiDict
 from pydantic import TypeAdapter
 from requests import Response
 
@@ -18,13 +24,11 @@ from open_mpic_core.common_domain.enum.dcv_validation_method import DcvValidatio
 from open_mpic_core.mpic_coordinator.domain.mpic_orchestration_parameters import MpicEffectiveOrchestrationParameters
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicCaaResponse
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
+from yarl import URL
 
 from mpic_coordinator_service.main import MpicCoordinatorService, PerspectiveEndpoints, PerspectiveEndpointInfo, app
 from open_mpic_core_test.test_util.valid_mpic_request_creator import ValidMpicRequestCreator
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
-
-
-client = TestClient(app)
 
 
 # noinspection PyMethodMayBeStatic
@@ -87,11 +91,20 @@ class TestMpicCoordinatorService:
         assert 'test-1' in perspectives
         assert 'test-7' in perspectives['test-8'].too_close_codes
 
-    def call_remote_perspective__should_call_remote_perspective_with_provided_arguments_and_return_check_response(self, set_env_variables, mocker):
-        mocker.patch('requests.post', side_effect=self.create_successful_api_call_response_for_dcv_check)
-        dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
+    async def call_remote_perspective__should_call_remote_perspective_with_provided_arguments_and_return_check_response(self, set_env_variables, mocker):
         service = MpicCoordinatorService()
-        check_response = service.call_remote_perspective(
+        await service.initialize()
+
+        # noinspection PyProtectedMember
+        mocker.patch.object(
+            service._async_http_client, 'post',
+            side_effect=lambda *args, **kwargs: AsyncMock(__aenter__=AsyncMock(
+                return_value=self.create_successful_api_call_response_for_dcv_check(*args, **kwargs)
+            ))
+        )
+
+        dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
+        check_response = await service.call_remote_perspective(
             RemotePerspective(code='test-1', rir='rir1'), CheckType.DCV, dcv_check_request
         )
         assert check_response.check_passed is True
@@ -164,7 +177,7 @@ class TestMpicCoordinatorService:
         return perspectives_as_dict
 
     # noinspection PyUnusedLocal,PyShadowingNames
-    def create_successful_api_call_response_for_dcv_check(self, url, timeout, headers, json):
+    def create_successful_api_call_response_for_dcv_check(self, url, headers, json):
         # json arg in requests.post() is a "json serializable object" (dict) rather than an actual json string
         check_request = DcvCheckRequest.model_validate(json)
         # hijacking the value of 'perspective_code' to verify that the right arguments got passed to the call
@@ -174,19 +187,42 @@ class TestMpicCoordinatorService:
                 validation_method=DcvValidationMethod.ACME_DNS_01
             )
         )
-        expected_response = TestMpicCoordinatorService.create_mock_response(
+        expected_response = TestMpicCoordinatorService.create_mock_http_response(
             200, expected_response_body.model_dump_json()
         )
         return expected_response
 
     @staticmethod
-    def create_mock_response(status_code: int, content: str, kwargs: dict = None):
+    def create_old_mock_http_response(status_code: int, content: str, kwargs: dict = None):
         response = Response()
         response.status_code = status_code
         response.raw = BytesIO(content.encode('utf-8'))  # code under test reads from response.text
         if kwargs is not None:
             for k, v in kwargs.items():
                 setattr(response, k, v)
+        return response
+
+    @staticmethod
+    def create_mock_http_response(status_code: int, content: str):
+        event_loop = asyncio.get_event_loop()
+        response = ClientResponse(
+            method='GET', url=URL('http://example.com'), writer=AsyncMock(), continue100=None,
+            timer=AsyncMock(), request_info=AsyncMock(), traces=[], loop=event_loop, session=AsyncMock()
+        )
+        response.status = status_code
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Content-Length': str(len(content))
+        }
+        # response.content = StreamReader(loop=event_loop)
+        # response.content.feed_data(bytes(content.encode('utf-8')))
+        # response.content.feed_eof()
+
+        response._body = content.encode('utf-8')
+
+        response._headers = CIMultiDictProxy(CIMultiDict(headers))
+
         return response
 
     @staticmethod
