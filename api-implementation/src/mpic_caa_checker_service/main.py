@@ -23,13 +23,13 @@ class MpicCaaCheckerService:
         return await self.caa_checker.check_caa(caa_request)
 
 
-# Global instance for Lambda runtime
+# Global instance for Service
 _service = None
 
 
 def get_service() -> MpicCaaCheckerService:
     """
-    Singleton pattern to avoid recreating the handler on every Lambda invocation
+    Singleton pattern to avoid recreating the service on every API all
     """
     global _service
     if _service is None:
