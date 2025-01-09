@@ -7,17 +7,7 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  Set-Timestamp:
-    runs-on: ubuntu-latest
-    outputs:
-      TIMESTAMP: ${{ steps.timestamp.outputs.timestamp }}
-    steps:
-      - name: Set shared timestamp (using workflow start time)
-        id: timestamp
-        run: echo "timestamp=$(date +%Y%m%d-%H%M%S)" >> $GITHUB_OUTPUT
-
   Image-Build:
-    needs: Set-Timestamp
     runs-on: ubuntu-latest
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
@@ -42,15 +32,13 @@ jobs:
 
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
-        env:
-          TIMESTAMP: ${{ needs.Set-Timestamp.outputs.TIMESTAMP }}
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}
           tags: |
             # set timestamp tag
-            type=raw,value=${{ env.TIMESTAMP }}
+            type=raw,value={{date 'YYYYMMDD-HHmmss'}}
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
 
