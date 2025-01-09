@@ -28,9 +28,6 @@ jobs:
     strategy:
       matrix:
         service: [coordinator, dcv_checker, caa_checker]
-        platform:
-          - linux/amd64
-          - linux/arm64
 
     steps:
       - name: Checkout repository
