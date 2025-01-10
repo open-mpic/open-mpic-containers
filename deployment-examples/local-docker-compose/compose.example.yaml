@@ -2,7 +2,7 @@ name: open-mpic
 
 services:
   dcv_checker_1:
-    image: ghcr.io/examplenamespace/dcv:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/dcv_checker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dcv1.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-1`)"
@@ -11,10 +11,10 @@ services:
       - "traefik.http.routers.dcv1.middlewares=strip_dcv1@docker"
     configs:
       - source: dcv_config_1
-        target: /src/mpic_dcv_checker_service/config/app.conf
+        target: /app/config/app.conf
 
   dcv_checker_2:
-    image: ghcr.io/examplenamespace/dcv:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/dcv_checker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dcv2.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-2`)"
@@ -23,10 +23,10 @@ services:
       - "traefik.http.routers.dcv2.middlewares=strip_dcv2@docker"
     configs:
       - source: dcv_config_2
-        target: /src/mpic_dcv_checker_service/config/app.conf
+        target: /app/config/app.conf
 
   coordinator:
-    image: ghcr.io/examplenamespace/coordinator:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/coordinator:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.coordinator.rule=Host(`localhost`) && PathPrefix(`/mpic-coordinator`)"
@@ -35,12 +35,12 @@ services:
       - "traefik.http.routers.coordinator.middlewares=strip_coordinator@docker"
     configs:
       - source: coordinator_config
-        target: /src/mpic_coordinator_service/config/app.conf
+        target: /app/config/app.conf
     volumes:
-      - ./resources:/src/mpic_coordinator_service/resources
+      - ./resources:/app/resources
 
   caa_checker_1:
-    image: ghcr.io/examplenamespace/caa:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/caa_checker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.caa1.rule=Host(`localhost`) && PathPrefix(`/caa-checker-1`)"
@@ -49,10 +49,10 @@ services:
       - "traefik.http.routers.caa1.middlewares=strip_caa1@docker"
     configs:
       - source: caa_config_1
-        target: /src/mpic_caa_checker_service/config/app.conf
+        target: /app/config/app.conf
 
   caa_checker_2:
-    image: ghcr.io/examplenamespace/caa:20241218-044627  # please use your own image
+    image: ghcr.io/open-mpic/caa_checker:latest
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.caa2.rule=Host(`localhost`) && PathPrefix(`/caa-checker-2`)"
@@ -61,7 +61,7 @@ services:
       - "traefik.http.routers.caa2.middlewares=strip_caa2@docker"
     configs:
       - source: caa_config_2
-        target: /src/mpic_caa_checker_service/config/app.conf
+        target: /app/config/app.conf
 
   traefik:
     image: traefik:v2.9
@@ -81,21 +81,21 @@ services:
 configs:
   dcv_config_1:
     content: |
-      code="us-east-1"
+      code="example-region-1"
   dcv_config_2:
     content: |
-      code="eu-central-1"
+      code="example-region-2"
   caa_config_1:
     content: |
-      code="us-east-1"
+      code="example-region-1"
       default_caa_domains="example.com|example.org"
   caa_config_2:
     content: |
-      code="eu-central-1"
+      code="example-region-2"
       default_caa_domains="example.com|example.org"
   coordinator_config:
     content: |
-      perspectives={"us-east-1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"eu-central-1":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}
+      perspectives={"example-region-1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"example-region-2":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}
       default_perspective_count=2
       absolute_max_attempts=2
       hash_secret=hash_secret

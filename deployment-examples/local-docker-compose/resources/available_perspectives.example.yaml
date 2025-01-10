@@ -1,11 +1,11 @@
 available_regions:
   -
-    code: "test1"
+    code: "example-region-1"
     name: "Africa (Cape Town)"
     rir: "arin"
     too_close_codes: []
   -
-    code: "test2"
+    code: "example-region-2"
     name: "Asia Pacific (Hong Kong)"
     rir: "apnic"
     too_close_codes: []
