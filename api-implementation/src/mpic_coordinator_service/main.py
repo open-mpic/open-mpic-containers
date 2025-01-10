@@ -48,6 +48,12 @@ class MpicCoordinatorService:
         self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
         self.hash_secret = os.environ['hash_secret']
 
+        if "timeout_seconds" in os.environ:
+            self.timeout_seconds = float(os.environ['timeout_seconds'])
+        else:
+            # Default timeout seconds
+            self.timeout_seconds = 5
+
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
             CheckType.CAA: {perspective_code: perspective_config.caa_endpoint_info for perspective_code, perspective_config in perspectives.items()}
@@ -77,7 +83,8 @@ class MpicCoordinatorService:
 
     async def initialize(self):
         if self._async_http_client is None:
-            self._async_http_client = aiohttp.ClientSession()
+            session_timeout =   aiohttp.ClientTimeout(total=None,sock_connect=self.timeout_seconds,sock_read=self.timeout_seconds)
+            self._async_http_client = aiohttp.ClientSession(timeout=session_timeout)
 
     async def shutdown(self):
         if self._async_http_client:
