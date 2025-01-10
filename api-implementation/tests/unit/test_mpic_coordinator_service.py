@@ -6,7 +6,7 @@ import pytest
 
 from importlib import resources
 from io import BytesIO
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
 
 from aiohttp import ClientResponse
 from fastapi import status
@@ -72,7 +72,7 @@ class TestMpicCoordinatorService:
                 class_scoped_monkeypatch.setenv(k, v)
             yield class_scoped_monkeypatch
 
-    def constructor__should_initialize_mpic_coordinator_and_set_target_perspectives(self, set_env_variables):
+    def constructor__should_instantiate_mpic_coordinator_with_configuration_including_target_perspectives(self, set_env_variables):
         mpic_coordinator_service = MpicCoordinatorService()
         all_possible_perspectives = TestMpicCoordinatorService.get_perspectives_by_code_dict_from_file()
         for target_perspective in mpic_coordinator_service.target_perspectives:
@@ -94,21 +94,29 @@ class TestMpicCoordinatorService:
         service = MpicCoordinatorService()
         await service.initialize()
 
-        # noinspection PyProtectedMember
-        mocker.patch.object(
-            service._async_http_client, 'post',
-            side_effect=lambda *args, **kwargs: AsyncMock(__aenter__=AsyncMock(
-                return_value=self.create_successful_api_call_response_for_dcv_check(*args, **kwargs)
-            ))
-        )
+        try:
+            def args_based_mock(*args, **kwargs):
+                mock_response = self.create_successful_api_call_response_for_dcv_check(*args, **kwargs)
+                return AsyncMock(
+                    __aenter__=AsyncMock(return_value=mock_response),
+                    __aexit__=AsyncMock(return_value=None)
+                )
 
-        dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
-        check_response = await service.call_remote_perspective(
-            RemotePerspective(code='test-1', rir='rir1'), CheckType.DCV, dcv_check_request
-        )
-        assert check_response.check_passed is True
-        # hijacking the value of 'perspective_code' to verify that the right arguments got passed to the call
-        assert check_response.perspective_code == dcv_check_request.domain_or_ip_target
+            # noinspection PyProtectedMember
+            mocker.patch.object(
+                service._async_http_client, 'post',
+                side_effect=args_based_mock
+            )
+
+            dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
+            check_response = await service.call_remote_perspective(
+                RemotePerspective(code='test-1', rir='rir1'), CheckType.DCV, dcv_check_request
+            )
+            assert check_response.check_passed is True
+            # hijacking the value of 'perspective_code' to verify that the right arguments got passed to the call
+            assert check_response.perspective_code == dcv_check_request.domain_or_ip_target
+        finally:
+            await service.shutdown()
 
     def service__should_read_in_environment_configuration_through_config_file(self, set_some_env_variables):
         mpic_coordinator_service = MpicCoordinatorService()
@@ -215,7 +223,7 @@ class TestMpicCoordinatorService:
     def create_mock_http_response(status_code: int, content: str):
         event_loop = asyncio.get_event_loop()
         response = ClientResponse(
-            method='GET', url=URL('http://example.com'), writer=AsyncMock(), continue100=None,
+            method='GET', url=URL('http://example.com'), writer=MagicMock(), continue100=None,
             timer=AsyncMock(), request_info=AsyncMock(), traces=[], loop=event_loop, session=AsyncMock()
         )
         headers = {
