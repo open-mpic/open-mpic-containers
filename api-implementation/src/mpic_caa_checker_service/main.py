@@ -19,17 +19,17 @@ class MpicCaaCheckerService:
         self.default_caa_domain_list = os.environ['default_caa_domains'].split("|")
         self.caa_checker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code)
 
-    def check_caa(self, caa_request: CaaCheckRequest):
-        return self.caa_checker.check_caa(caa_request)
+    async def check_caa(self, caa_request: CaaCheckRequest):
+        return await self.caa_checker.check_caa(caa_request)
 
 
-# Global instance for Lambda runtime
+# Global instance for Service
 _service = None
 
 
 def get_service() -> MpicCaaCheckerService:
     """
-    Singleton pattern to avoid recreating the handler on every Lambda invocation
+    Singleton pattern to avoid recreating the service on every API all
     """
     global _service
     if _service is None:
@@ -41,5 +41,5 @@ app = FastAPI()
 
 
 @app.post("/caa")
-def handle_caa_check(request: CaaCheckRequest):
-    return get_service().check_caa(request)
+async def handle_caa_check(request: CaaCheckRequest):
+    return await get_service().check_caa(request)

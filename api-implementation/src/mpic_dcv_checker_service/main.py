@@ -1,4 +1,5 @@
 import os
+from contextlib import asynccontextmanager
 
 from pathlib import Path
 from dotenv import load_dotenv
@@ -19,8 +20,14 @@ class MpicDcvCheckerService:
         self.perspective_code = os.environ['code']
         self.dcv_checker = MpicDcvChecker(self.perspective_code)
 
-    def check_dcv(self, dcv_request: DcvCheckRequest):
-        result = self.dcv_checker.check_dcv(dcv_request)
+    async def initialize(self):
+        await self.dcv_checker.initialize()
+
+    async def shutdown(self):
+        await self.dcv_checker.shutdown()
+
+    async def check_dcv(self, dcv_request: DcvCheckRequest):
+        result = await self.dcv_checker.check_dcv(dcv_request)
         if result.errors is not None and len(result.errors) > 0:
             if result.errors[0].error_type == '404':
                 status_code = status.HTTP_404_NOT_FOUND
@@ -48,9 +55,22 @@ def get_service() -> MpicDcvCheckerService:
     return _service
 
 
-app = FastAPI()
+# noinspection PyUnusedLocal
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
+    # Initialize services
+    service = get_service()
+    await service.initialize()
+
+    yield
+
+    # Cleanup
+    await service.shutdown()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.post("/dcv")
-def perform_mpic(request: DcvCheckRequest):
-    return get_service().check_dcv(request)
+async def perform_mpic(request: DcvCheckRequest):
+    return await get_service().check_dcv(request)

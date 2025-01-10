@@ -50,6 +50,7 @@ class TestDeployedMpicApi:
         print("\nResponse:\n", json.dumps(mpic_response.model_dump(), indent=4))  # pretty print response body
         perspectives_list = mpic_response.perspectives
         assert mpic_response.is_valid is True
+        assert mpic_response.domain_or_ip_target == request.domain_or_ip_target
         assert len(perspectives_list) == request.orchestration_parameters.perspective_count
         assert (len(list(filter(lambda perspective: perspective.check_type == CheckType.CAA, perspectives_list)))
                 == request.orchestration_parameters.perspective_count)

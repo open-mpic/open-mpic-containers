@@ -1,13 +1,19 @@
+import os
 import json
-from pathlib import Path
+from contextlib import asynccontextmanager
 
+import yaml
+import aiohttp
+
+from dotenv import load_dotenv
+from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from pydantic import TypeAdapter, BaseModel, Field
+
 from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import MpicRequestValidationError
 from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import MpicRequestValidationMessages
-
-from pydantic import TypeAdapter, BaseModel, Field
 from open_mpic_core.common_domain.check_request import BaseCheckRequest
 from open_mpic_core.common_domain.check_response import CheckResponse
 from open_mpic_core.mpic_coordinator.domain.mpic_request import MpicRequest
@@ -16,10 +22,6 @@ from open_mpic_core.common_domain.enum.check_type import CheckType
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
 
-import yaml
-import requests
-import os
-from dotenv import load_dotenv
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
@@ -46,6 +48,12 @@ class MpicCoordinatorService:
         self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
         self.hash_secret = os.environ['hash_secret']
 
+        if "timeout_seconds" in os.environ:
+            self.timeout_seconds = float(os.environ['timeout_seconds'])
+        else:
+            # Default timeout seconds
+            self.timeout_seconds = 5
+
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
             CheckType.CAA: {perspective_code: perspective_config.caa_endpoint_info for perspective_code, perspective_config in perspectives.items()}
@@ -62,6 +70,8 @@ class MpicCoordinatorService:
             self.hash_secret
         )
 
+        self._async_http_client = None
+
         self.mpic_coordinator = MpicCoordinator(
             self.call_remote_perspective,
             self.mpic_coordinator_configuration
@@ -70,6 +80,16 @@ class MpicCoordinatorService:
         # for correct deserialization of responses based on discriminator field (check type)
         self.mpic_request_adapter = TypeAdapter(MpicRequest)
         self.check_response_adapter = TypeAdapter(CheckResponse)
+
+    async def initialize(self):
+        if self._async_http_client is None:
+            session_timeout =   aiohttp.ClientTimeout(total=None,sock_connect=self.timeout_seconds,sock_read=self.timeout_seconds)
+            self._async_http_client = aiohttp.ClientSession(timeout=session_timeout)
+
+    async def shutdown(self):
+        if self._async_http_client:
+            await self._async_http_client.close()
+            self._async_http_client = None
 
     @staticmethod
     def load_available_perspectives_config() -> dict[str, RemotePerspective]:
@@ -102,15 +122,21 @@ class MpicCoordinatorService:
         return remote_perspectives
 
     # This function MUST validate its response and return a proper open_mpic_core object type.
-    def call_remote_perspective(self, perspective: RemotePerspective, check_type: CheckType, check_request: BaseCheckRequest) -> CheckResponse:
+    async def call_remote_perspective(self, perspective: RemotePerspective, check_type: CheckType, check_request: BaseCheckRequest) -> CheckResponse:
+        if self._async_http_client is None:
+            raise RuntimeError("Service not initialized - call initialize() first")
+
         # Get the remote info from the data structure.
         endpoint_info: PerspectiveEndpointInfo = self.remotes_per_perspective_per_check_type[check_type][perspective.code]
-        r = requests.post(endpoint_info.url, timeout=3, headers=endpoint_info.headers, json=check_request.model_dump())
-        # TODO think through error handling here... what do we expect and how do we test it?
-        return self.check_response_adapter.validate_json(r.text)
 
-    def perform_mpic(self, mpic_request: MpicRequest) -> MpicResponse:
-        return self.mpic_coordinator.coordinate_mpic(mpic_request)
+        async with self._async_http_client.post(
+                url=endpoint_info.url, headers=endpoint_info.headers, json=check_request.model_dump()
+        ) as response:
+            text = await response.text()
+            return self.check_response_adapter.validate_json(text)
+
+    async def perform_mpic(self, mpic_request: MpicRequest) -> MpicResponse:
+        return await self.mpic_coordinator.coordinate_mpic(mpic_request)
 
 
 # Global instance for Service
@@ -127,7 +153,20 @@ def get_service() -> MpicCoordinatorService:
     return _service
 
 
-app = FastAPI()
+# noinspection PyUnusedLocal
+@asynccontextmanager
+async def lifespan(app_instance: FastAPI):
+    # Initialize services
+    service = get_service()
+    await service.initialize()
+
+    yield
+
+    # Cleanup
+    await service.shutdown()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 # noinspection PyUnusedLocal
@@ -169,5 +208,5 @@ async def exception_handling_middleware(request: Request, call_next):
 
 
 @app.post("/mpic")
-def handle_mpic(request: MpicRequest):
-    return get_service().perform_mpic(request)
+async def handle_mpic(request: MpicRequest):
+    return await get_service().perform_mpic(request)

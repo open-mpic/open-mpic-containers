@@ -1,4 +1,6 @@
 import time
+from unittest.mock import AsyncMock
+
 import pytest
 
 from fastapi import status
@@ -9,9 +11,6 @@ from open_mpic_core.common_domain.check_response_details import CaaCheckResponse
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
 
 from mpic_caa_checker_service.main import MpicCaaCheckerService, app
-
-
-client = TestClient(app)
 
 
 # noinspection PyMethodMayBeStatic
@@ -30,12 +29,18 @@ class TestMpicCaaCheckerService:
 
     # noinspection PyMethodMayBeStatic
     def service__should_do_caa_check_using_configured_caa_checker(self, set_env_variables, mocker):
-        mock_caa_result = TestMpicCaaCheckerService.create_caa_check_response()
-        mocker.patch('open_mpic_core.mpic_caa_checker.mpic_caa_checker.MpicCaaChecker.check_caa', return_value=mock_caa_result)
+        mock_caa_response = TestMpicCaaCheckerService.create_caa_check_response()
+
+        # Use AsyncMock for async function
+        awaitable_mock_response = AsyncMock(return_value=mock_caa_response)
+        mocker.patch('open_mpic_core.mpic_caa_checker.mpic_caa_checker.MpicCaaChecker.check_caa', new=awaitable_mock_response)
+
         caa_check_request = ValidCheckCreator.create_valid_caa_check_request()
-        response = client.post('/caa', json=caa_check_request.model_dump())
+
+        with TestClient(app) as client:
+            response = client.post('/caa', json=caa_check_request.model_dump())
         assert response.status_code == status.HTTP_200_OK
-        assert response.json() == mock_caa_result.model_dump()
+        assert response.json() == mock_caa_response.model_dump()
 
     def service__should_read_in_environment_configuration_through_config_file(self):
         service = MpicCaaCheckerService()

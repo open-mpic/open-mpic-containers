@@ -1,12 +1,17 @@
+import asyncio
 import json
+
 import yaml
 import pytest
 
 from importlib import resources
 from io import BytesIO
-from unittest.mock import patch
+from unittest.mock import patch, AsyncMock, MagicMock
+
+from aiohttp import ClientResponse
 from fastapi import status
 from fastapi.testclient import TestClient
+from multidict import CIMultiDictProxy, CIMultiDict
 from pydantic import TypeAdapter
 from requests import Response
 
@@ -18,13 +23,11 @@ from open_mpic_core.common_domain.enum.dcv_validation_method import DcvValidatio
 from open_mpic_core.mpic_coordinator.domain.mpic_orchestration_parameters import MpicEffectiveOrchestrationParameters
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicCaaResponse
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
+from yarl import URL
 
 from mpic_coordinator_service.main import MpicCoordinatorService, PerspectiveEndpoints, PerspectiveEndpointInfo, app
 from open_mpic_core_test.test_util.valid_mpic_request_creator import ValidMpicRequestCreator
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
-
-
-client = TestClient(app)
 
 
 # noinspection PyMethodMayBeStatic
@@ -69,7 +72,7 @@ class TestMpicCoordinatorService:
                 class_scoped_monkeypatch.setenv(k, v)
             yield class_scoped_monkeypatch
 
-    def constructor__should_initialize_mpic_coordinator_and_set_target_perspectives(self, set_env_variables):
+    def constructor__should_instantiate_mpic_coordinator_with_configuration_including_target_perspectives(self, set_env_variables):
         mpic_coordinator_service = MpicCoordinatorService()
         all_possible_perspectives = TestMpicCoordinatorService.get_perspectives_by_code_dict_from_file()
         for target_perspective in mpic_coordinator_service.target_perspectives:
@@ -87,27 +90,45 @@ class TestMpicCoordinatorService:
         assert 'test-1' in perspectives
         assert 'test-7' in perspectives['test-8'].too_close_codes
 
-    def call_remote_perspective__should_call_remote_perspective_with_provided_arguments_and_return_check_response(self, set_env_variables, mocker):
-        mocker.patch('requests.post', side_effect=self.create_successful_api_call_response_for_dcv_check)
-        dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
+    async def call_remote_perspective__should_call_remote_perspective_with_provided_arguments_and_return_check_response(self, set_env_variables, mocker):
         service = MpicCoordinatorService()
-        check_response = service.call_remote_perspective(
-            RemotePerspective(code='test-1', rir='rir1'), CheckType.DCV, dcv_check_request
-        )
-        assert check_response.check_passed is True
-        # hijacking the value of 'perspective_code' to verify that the right arguments got passed to the call
-        assert check_response.perspective_code == dcv_check_request.domain_or_ip_target
+        await service.initialize()
+
+        try:
+            def args_based_mock(*args, **kwargs):
+                mock_response = self.create_successful_api_call_response_for_dcv_check(*args, **kwargs)
+                return AsyncMock(
+                    __aenter__=AsyncMock(return_value=mock_response),
+                    __aexit__=AsyncMock(return_value=None)
+                )
+
+            # noinspection PyProtectedMember
+            mocker.patch.object(
+                service._async_http_client, 'post',
+                side_effect=args_based_mock
+            )
+
+            dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
+            check_response = await service.call_remote_perspective(
+                RemotePerspective(code='test-1', rir='rir1'), CheckType.DCV, dcv_check_request
+            )
+            assert check_response.check_passed is True
+            # hijacking the value of 'perspective_code' to verify that the right arguments got passed to the call
+            assert check_response.perspective_code == dcv_check_request.domain_or_ip_target
+        finally:
+            await service.shutdown()
 
     def service__should_read_in_environment_configuration_through_config_file(self, set_some_env_variables):
         mpic_coordinator_service = MpicCoordinatorService()
         # it'll read in the placeholder values in the config files -- that's acceptable for this particular test
         assert mpic_coordinator_service.hash_secret == 'HASH_SECRET_STRING'
 
-    def service__should_return_400_error_and_details_given_invalid_request_body(self, set_env_variables):
+    async def service__should_return_400_error_and_details_given_invalid_request_body(self, set_env_variables):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
         # noinspection PyTypeChecker
         request.domain_or_ip_target = None
-        response = client.post('/mpic', json=request.model_dump())
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == 400
         result_body = json.loads(response.text)
         assert result_body['validation_issues'][0]['type'] == 'string_type'
@@ -115,7 +136,8 @@ class TestMpicCoordinatorService:
     def service__should_return_400_error_and_details_given_invalid_check_type(self, set_env_variables):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
         request.check_type = 'invalid_check_type'
-        response = client.post('/mpic', json=request.model_dump())
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == 400
         result_body = json.loads(response.text)
         assert result_body['validation_issues'][0]['type'] == 'literal_error'
@@ -123,24 +145,32 @@ class TestMpicCoordinatorService:
     def service__should_return_400_error_given_logically_invalid_request(self, set_env_variables):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
         request.orchestration_parameters.perspective_count = 1
-        response = client.post('/mpic', json=request.model_dump())
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == 400
         result_body = json.loads(response.text)
         assert result_body['validation_issues'][0]['issue_type'] == 'invalid-perspective-count'
 
     def service__should_return_500_error_given_other_unexpected_errors(self, set_env_variables, mocker):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
-        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic',
-                     side_effect=Exception('Something went wrong'))
-        response = client.post('/mpic', json=request.model_dump())
+
+        # Use AsyncMock for async function
+        awaitable_result = AsyncMock(side_effect=Exception('Something went wrong'))
+        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=awaitable_result)
+
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == 500
 
     def service__should_coordinate_mpic_using_configured_mpic_coordinator(self, set_env_variables, mocker):
-        mpic_request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
-        mock_return_value = TestMpicCoordinatorService.create_caa_mpic_response()
-        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic',
-                     return_value=mock_return_value)
-        response = client.post('/mpic', json=mpic_request.model_dump())
+        request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
+        mock_response = TestMpicCoordinatorService.create_caa_mpic_response()
+
+        awaitable_mock_response = AsyncMock(return_value=mock_response)
+        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=awaitable_mock_response)
+
+        with TestClient(app) as client:
+            response = client.post('/mpic', json=request.model_dump())
         assert response.status_code == status.HTTP_200_OK
         result_body = json.loads(response.text)
         assert result_body['is_valid'] is True
@@ -164,7 +194,7 @@ class TestMpicCoordinatorService:
         return perspectives_as_dict
 
     # noinspection PyUnusedLocal,PyShadowingNames
-    def create_successful_api_call_response_for_dcv_check(self, url, timeout, headers, json):
+    def create_successful_api_call_response_for_dcv_check(self, url, headers, json):
         # json arg in requests.post() is a "json serializable object" (dict) rather than an actual json string
         check_request = DcvCheckRequest.model_validate(json)
         # hijacking the value of 'perspective_code' to verify that the right arguments got passed to the call
@@ -174,19 +204,37 @@ class TestMpicCoordinatorService:
                 validation_method=DcvValidationMethod.ACME_DNS_01
             )
         )
-        expected_response = TestMpicCoordinatorService.create_mock_response(
+        expected_response = TestMpicCoordinatorService.create_mock_http_response(
             200, expected_response_body.model_dump_json()
         )
         return expected_response
 
     @staticmethod
-    def create_mock_response(status_code: int, content: str, kwargs: dict = None):
+    def create_old_mock_http_response(status_code: int, content: str, kwargs: dict = None):
         response = Response()
         response.status_code = status_code
         response.raw = BytesIO(content.encode('utf-8'))  # code under test reads from response.text
         if kwargs is not None:
             for k, v in kwargs.items():
                 setattr(response, k, v)
+        return response
+
+    @staticmethod
+    def create_mock_http_response(status_code: int, content: str):
+        event_loop = asyncio.get_event_loop()
+        response = ClientResponse(
+            method='GET', url=URL('http://example.com'), writer=MagicMock(), continue100=None,
+            timer=AsyncMock(), request_info=AsyncMock(), traces=[], loop=event_loop, session=AsyncMock()
+        )
+        headers = {
+            'Content-Type': 'application/json',
+            'Content-Length': str(len(content))
+        }
+
+        response.status = status_code
+        response._body = content.encode('utf-8')
+        response._headers = CIMultiDictProxy(CIMultiDict(headers))
+
         return response
 
     @staticmethod
