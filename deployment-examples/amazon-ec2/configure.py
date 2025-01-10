@@ -168,7 +168,9 @@ def main(raw_args=None):
             
             with open(args.aws_instance_tf_template) as instance_file:
                 instance_file_contents = instance_file.read()
-                for instance_number in range(config['instances-per-region']):
+                #instances_per_region = config['instances-per-region']
+                instances_per_region = 1
+                for instance_number in range(instances_per_region):
                     aws_instance_tf = instance_file_contents.replace("{{instance-number}}", str(instance_number))
                     aws_instance_tf = aws_instance_tf.replace("{{deployment-id}}", str(deployment_id))
                     aws_instance_tf = aws_instance_tf.replace("{{region}}", region)

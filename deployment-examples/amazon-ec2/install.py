@@ -140,29 +140,30 @@ def main(raw_args=None):
 
         dcv_endpoints = {}
         caa_endpoints = {}
-
-        perspective_names = "|".join(perspectives)
+        perspectives_object = {}
         for perspective in perspectives:
             domains = [remotes[ip]['dns'] for ip in remotes if remotes[ip]['region'] == perspective]
+            # Assume we only have one endpoint and load balancing is done somewhere else.
+            domain = domains[0]
+            perspectives_object[perspective] = {
+                "caa_endpoint_info": {"url": f"https://{domain}/caa", "headers": {"x-api-key": api_key, "Content-Type": "application/json"}},
+                "dcv_endpoint_info": {"url": f"https://{domain}/dcv", "headers": {"x-api-key": api_key, "Content-Type": "application/json"}}
+                }
             # FIXME don't use a list, use a single entry point which will do load balancing.
-            dcv_endpoints[perspective] = [{"url": f"https://{domain}/dcv", "headers": {"x-api-key": api_key, "Content-Type": "application/json"}} for domain in domains]
-            caa_endpoints[perspective] = [{"url": f"https://{domain}/caa", "headers": {"x-api-key": api_key, "Content-Type": "application/json"}} for domain in domains]
-        
-        dcv_endpoints_json = json.dumps(dcv_endpoints)
-        caa_endpoints_json = json.dumps(caa_endpoints)
-        print(dcv_endpoints_json)
-        print(caa_endpoints_json)
+            # Temp fix is above. Assume there is one entry point.
+            #dcv_endpoints[perspective] = [{"url": f"https://{domain}/dcv", "headers": {"x-api-key": api_key, "Content-Type": "application/json"}} for domain in domains]
+            #caa_endpoints[perspective] = [{"url": f"https://{domain}/caa", "headers": {"x-api-key": api_key, "Content-Type": "application/json"}} for domain in domains]
+        perspectives_json = json.dumps(perspectives_object)
+        print(perspectives_json)
         for ip in remotes:
             docker_compose_template_string_region = docker_compose_template[:]
 
             docker_compose_template_string_region = docker_compose_template_string_region.replace("{{hash-secret}}", hash_secret)
             
-            docker_compose_template_string_region = docker_compose_template_string_region.replace("{{perspective-names}}", perspective_names)
-            docker_compose_template_string_region = docker_compose_template_string_region.replace("{{dcv-remotes-json}}", dcv_endpoints_json)
-            docker_compose_template_string_region = docker_compose_template_string_region.replace("{{caa-remotes-json}}", caa_endpoints_json)
+            docker_compose_template_string_region = docker_compose_template_string_region.replace("{{perspectives}}", perspectives_json)
             docker_compose_template_string_region = docker_compose_template_string_region.replace("{{default-perspective-count}}", str(config['default-perspective-count']))
 
-            docker_compose_template_string_region = docker_compose_template_string_region.replace("{{enforce-distinct-rir-regions}}", "1" if config['enforce-distinct-rir-regions'] else "0")
+            docker_compose_template_string_region = docker_compose_template_string_region.replace("{{enforce-distinct-rir-regions}}", "1" if 'enforce-distinct-rir-regions' not in config else config['enforce-distinct-rir-regions'])
             
             docker_compose_template_string_region = docker_compose_template_string_region.replace("{{default-caa-domains}}", "|".join(config['caa-domains']))
             

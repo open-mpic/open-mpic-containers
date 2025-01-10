@@ -15,5 +15,4 @@ caa-domains:
 
 absolute-max-attempts: 3
 
-instances-per-region: 2
 
