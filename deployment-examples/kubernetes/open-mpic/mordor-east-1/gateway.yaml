@@ -1,0 +1,33 @@
+apiVersion: networking.istio.io/v1
+kind: Gateway
+metadata:
+  name: open-mpic-gateway
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+    - port:
+        number: 8080
+        name: http
+        protocol: HTTP
+      hosts:
+        - "*"
+---
+apiVersion: networking.istio.io/v1
+kind: VirtualService
+metadata:
+  name: open-mpic
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - open-mpic-gateway
+  http:
+    - match:
+        - uri:
+            exact: /mpic
+      route:
+        - destination:
+            host: coordinator
+            port:
+              number: 80
