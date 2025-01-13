@@ -83,7 +83,7 @@ class MpicCoordinatorService:
 
     async def initialize(self):
         if self._async_http_client is None:
-            session_timeout =   aiohttp.ClientTimeout(total=None,sock_connect=self.timeout_seconds,sock_read=self.timeout_seconds)
+            session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=self.timeout_seconds, sock_read=self.timeout_seconds)
             self._async_http_client = aiohttp.ClientSession(timeout=session_timeout)
 
     async def shutdown(self):
