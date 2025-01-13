@@ -1,12 +1,5 @@
 # Open MPIC on k8s
 
-## Kubernetes Deployment with Istio
-
-This guide provides instructions on setting up Open MPIC on Kubernetes using Kustomize
-It deploys two imaginary regions for test purposes: `mordor-east-1` and `shire-west-1`.
-
-Also included is a traffic generator to have some traffic to monitor with Kiali.
-
 ## Prerequisites
 
 - `hey`
