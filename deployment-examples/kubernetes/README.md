@@ -94,8 +94,14 @@ cd deployment-examples/kubernetes/scripts
 sh setup-cluster.sh create
 ```
 
-### 2. Launch Kiali Dashboard
+### 2. Deploy Open MPIC
 
+```sh
+cd deployment-examples/kubernetes/open-mpic
+kustomize build . | kubectl apply -f -
+```
+
+### 3. Launch Kiali Dashboard
 
 ```sh
 $ istioctl dashboard kiali
@@ -104,14 +110,14 @@ http://localhost:20001/kiali
 
 ![Kiali Dashboard](./images/kiali.png)
 
-### 3. Generate Traffic
+### 4. Generate Traffic
 
 ```sh
 cd deployment-examples/kubernetes/scripts
 sh generate-traffic.sh
 ```
 
-### 4. View Kiali Traffic Graph
+### 5. View Kiali Traffic Graph
 
 Open the hamburger menu and select "Traffic Graph" to see the traffic between the services. Select the "mordor-east-1" and "shire-west-1" namespaces to see the traffic between the regions.
 

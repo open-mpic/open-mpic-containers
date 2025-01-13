@@ -4,6 +4,15 @@
 
 - `hey`
 - `jq`
+- `kustomize`
+- `kubectl`
+
+## Deploy Open MPIC
+
+```bash
+cd deployment-examples/kubernetes/open-mpic
+kustomize build . | kubectl apply -f -
+```
 
 ## Test commands
 
