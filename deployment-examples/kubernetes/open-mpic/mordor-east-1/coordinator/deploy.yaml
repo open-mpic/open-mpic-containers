@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: coordinator
+    version: v1
+  name: coordinator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coordinator
+      version: v1
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: coordinator
+        version: v1
+    spec:
+      containers:
+        - image: ghcr.io/open-mpic/coordinator:latest
+          name: coordinator
+          ports:
+            - containerPort: 80
+              protocol: TCP
+          resources: {}
+          volumeMounts:
+            - name: app-conf
+              mountPath: /app/config/app.conf
+              subPath: app.conf
+            - name: available-perspectives
+              mountPath: /app/resources/available_perspectives.yaml
+              subPath: available_perspectives.yaml
+      restartPolicy: Always
+      volumes:
+        - name: app-conf
+          configMap:
+            name: coordinator-config
+        - name: available-perspectives
+          configMap:
+            name: available-perspectives

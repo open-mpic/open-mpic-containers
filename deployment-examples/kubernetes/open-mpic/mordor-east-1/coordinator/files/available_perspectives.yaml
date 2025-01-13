@@ -1,0 +1,9 @@
+available_regions:
+  - code: "mordor-east-1"  
+    name: "Mordor (The Black Gate)" 
+    rir: "sauron" # Who needs real RIRs?
+    too_close_codes: ["gondor-south-1"] # Keep your enemies close
+  - code: "shire-west-1"  
+    name: "The Shire (Hobbiton)"  
+    rir: "iarpa" # International Association for Responsible Pipeweed Agriculture
+    too_close_codes: [] # Hobbits keep to themselves
