@@ -69,6 +69,13 @@ class TestMpicDcvCheckerService:
         assert response.status_code == expected_status_code
         assert response.json() == mock_dcv_response.model_dump()
 
+    def service__should_return_healthy_status_given_health_check_request(self):
+        with TestClient(app) as client:
+            response = client.get('/healthz')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {'status': 'healthy'}
+
     @staticmethod
     def create_dcv_check_response():
         return DcvCheckResponse(perspective_code='us-east-1', check_passed=True,

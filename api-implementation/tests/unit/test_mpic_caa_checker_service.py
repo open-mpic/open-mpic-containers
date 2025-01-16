@@ -47,6 +47,13 @@ class TestMpicCaaCheckerService:
         # it'll read in the placeholder values in the config files -- that's acceptable for this particular test
         assert service.perspective_code == 'PERSPECTIVE_NAME_CODE_STRING'
 
+    def service__should_return_healthy_status_given_health_check_request(self):
+        with TestClient(app) as client:
+            response = client.get('/healthz')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {'status': 'healthy'}
+
     @staticmethod
     def create_caa_check_response():
         return CaaCheckResponse(perspective_code='us-east-1', check_passed=True,

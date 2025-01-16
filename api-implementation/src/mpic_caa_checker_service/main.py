@@ -43,3 +43,8 @@ app = FastAPI()
 @app.post("/caa")
 async def handle_caa_check(request: CaaCheckRequest):
     return await get_service().check_caa(request)
+
+
+@app.get("/healthz")
+async def health_check():
+    return {"status": "healthy"}
