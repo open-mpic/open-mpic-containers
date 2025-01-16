@@ -175,6 +175,13 @@ class TestMpicCoordinatorService:
         result_body = json.loads(response.text)
         assert result_body['is_valid'] is True
 
+    def service__should_return_healthy_status_given_health_check_request(self):
+        with TestClient(app) as client:
+            response = client.get('/healthz')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {'status': 'healthy'}
+
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:
         with resources.files('resources').joinpath('available_test_perspectives.yaml').open('r') as file:
