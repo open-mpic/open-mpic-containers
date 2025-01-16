@@ -75,3 +75,8 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/dcv")
 async def perform_mpic(request: DcvCheckRequest):
     return await get_service().check_dcv(request)
+
+
+@app.get("/healthz")
+async def health_check():
+    return {"status": "healthy"}

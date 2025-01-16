@@ -210,3 +210,8 @@ async def exception_handling_middleware(request: Request, call_next):
 @app.post("/mpic")
 async def handle_mpic(request: MpicRequest):
     return await get_service().perform_mpic(request)
+
+
+@app.get("/healthz")
+async def health_check():
+    return {"status": "healthy"}
