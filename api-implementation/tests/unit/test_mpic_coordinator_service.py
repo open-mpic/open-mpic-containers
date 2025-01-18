@@ -49,7 +49,8 @@ class TestMpicCoordinatorService:
             'perspectives': json.dumps({k: v.model_dump() for k, v in perspectives_as_dict.items()}),
             'default_perspective_count': '2',
             'absolute_max_attempts': '2',
-            'hash_secret': 'test_secret'
+            'hash_secret': 'test_secret',
+            'timeout_seconds': '15'
         }
         with pytest.MonkeyPatch.context() as class_scoped_monkeypatch:
             for k, v in envvars.items():
@@ -82,6 +83,7 @@ class TestMpicCoordinatorService:
         assert mpic_coordinator_service.hash_secret == 'test_secret'
         assert mpic_coordinator_service.default_perspective_count == 2
         assert mpic_coordinator_service.global_max_attempts == 2
+        assert mpic_coordinator_service.timeout_seconds == 15
 
     def load_available_perspectives_config__should_return_dict_of_perspectives_with_proximity_info_by_region_code(self):
         perspectives = MpicCoordinatorService.load_available_perspectives_config()
