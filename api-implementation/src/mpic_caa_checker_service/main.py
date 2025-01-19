@@ -1,23 +1,27 @@
+import os
+
 from fastapi import FastAPI  # type: ignore
 from pathlib import Path
+from dotenv import load_dotenv
 
 from open_mpic_core.common_domain.check_request import CaaCheckRequest
 from open_mpic_core.mpic_caa_checker.mpic_caa_checker import MpicCaaChecker
-
-import os
-from dotenv import load_dotenv
-
+from open_mpic_core.common_util.trace_level_logger import get_logger
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
 load_dotenv(config_path)
+logger = get_logger(__name__)
 
 
 class MpicCaaCheckerService:
     def __init__(self):
         self.perspective_code = os.environ['code']
         self.default_caa_domain_list = os.environ['default_caa_domains'].split("|")
-        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code)
+
+        self.logger = logger.getChild(self.__class__.__name__)
+
+        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code, log_level=self.logger.level)
 
     async def check_caa(self, caa_request: CaaCheckRequest):
         return await self.caa_checker.check_caa(caa_request)

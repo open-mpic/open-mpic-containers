@@ -12,6 +12,8 @@ services:
     configs:
       - source: dcv_config_1
         target: /app/config/app.conf
+      - source: log_config
+        target: /app/config/log_config.yaml
 
   dcv_checker_2:
     image: ghcr.io/open-mpic/dcv_checker:latest
@@ -24,6 +26,8 @@ services:
     configs:
       - source: dcv_config_2
         target: /app/config/app.conf
+      - source: log_config
+        target: /app/config/log_config.yaml
 
   coordinator:
     image: ghcr.io/open-mpic/coordinator:latest
@@ -36,6 +40,8 @@ services:
     configs:
       - source: coordinator_config
         target: /app/config/app.conf
+      - source: log_config
+        target: /app/config/log_config.yaml
     volumes:
       - ./resources:/app/resources
 
@@ -50,6 +56,8 @@ services:
     configs:
       - source: caa_config_1
         target: /app/config/app.conf
+      - source: log_config
+        target: /app/config/log_config.yaml
 
   caa_checker_2:
     image: ghcr.io/open-mpic/caa_checker:latest
@@ -62,6 +70,8 @@ services:
     configs:
       - source: caa_config_2
         target: /app/config/app.conf
+      - source: log_config
+        target: /app/config/log_config.yaml
 
   traefik:
     image: traefik:v2.9
@@ -101,3 +111,5 @@ configs:
       default_perspective_count=2
       absolute_max_attempts=2
       hash_secret=hash_secret
+  log_config:
+    file: ./common_config/log_config.yaml

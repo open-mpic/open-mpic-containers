@@ -1,12 +1,13 @@
+import dns
 import time
-from unittest.mock import AsyncMock
-
 import pytest
 
 from fastapi import status
 from fastapi.testclient import TestClient
+from unittest.mock import AsyncMock
 
 from open_mpic_core.common_domain.check_response import CaaCheckResponse
+from open_mpic_core_test.test_util.mock_dns_object_creator import MockDnsObjectCreator
 from open_mpic_core.common_domain.check_response_details import CaaCheckResponseDetails
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
 
@@ -53,6 +54,22 @@ class TestMpicCaaCheckerService:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {'status': 'healthy'}
+
+    def service__should_set_log_level_of_caa_checker(self, setup_logging, mocker):  # TODO add logger_setup fixture
+        caa_check_request = ValidCheckCreator.create_valid_caa_check_request()
+
+        records = [MockDnsObjectCreator.create_caa_record(0, 'issue', 'ca1.org')]
+        mock_rrset = MockDnsObjectCreator.create_rrset(dns.rdatatype.CAA, *records)
+        mock_domain = dns.name.from_text(caa_check_request.domain_or_ip_target)
+        mock_return = (mock_rrset, mock_domain)
+        mocker.patch('open_mpic_core.mpic_caa_checker.mpic_caa_checker.MpicCaaChecker.find_caa_records_and_domain',
+                     return_value=mock_return)
+
+        with TestClient(app) as client:
+            response = client.post('/caa', json=caa_check_request.model_dump())
+        assert response.status_code == status.HTTP_200_OK
+        log_contents = setup_logging.getvalue()
+        assert all(text in log_contents for text in ['MpicCaaChecker', 'TRACE'])  # Verify the log level was set
 
     @staticmethod
     def create_caa_check_response():
