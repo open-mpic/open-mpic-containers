@@ -18,10 +18,7 @@ class MpicCaaCheckerService:
     def __init__(self):
         self.perspective_code = os.environ['code']
         self.default_caa_domain_list = os.environ['default_caa_domains'].split("|")
-
-        self.logger = logger.getChild(self.__class__.__name__)
-
-        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code, log_level=self.logger.level)
+        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code)
 
     async def check_caa(self, caa_request: CaaCheckRequest):
         return await self.caa_checker.check_caa(caa_request)
@@ -46,7 +43,9 @@ app = FastAPI()
 
 @app.post("/caa")
 async def handle_caa_check(request: CaaCheckRequest):
-    return await get_service().check_caa(request)
+    # noinspection PyUnresolvedReferences
+    async with logger.trace_timing("Remote CAA check processing"):
+        return await get_service().check_caa(request)
 
 
 @app.get("/healthz")

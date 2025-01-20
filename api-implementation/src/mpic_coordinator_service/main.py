@@ -56,8 +56,6 @@ class MpicCoordinatorService:
             # Default timeout seconds
             self.timeout_seconds = 5
 
-        self.logger = logger.getChild(self.__class__.__name__)
-
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
             CheckType.CAA: {perspective_code: perspective_config.caa_endpoint_info for perspective_code, perspective_config in perspectives.items()}
@@ -78,8 +76,7 @@ class MpicCoordinatorService:
 
         self.mpic_coordinator = MpicCoordinator(
             call_remote_perspective_function=self.call_remote_perspective,
-            mpic_coordinator_configuration=self.mpic_coordinator_configuration,
-            log_level=self.logger.level
+            mpic_coordinator_configuration=self.mpic_coordinator_configuration
         )
 
         # for correct deserialization of responses based on discriminator field (check type)
@@ -213,7 +210,9 @@ async def exception_handling_middleware(request: Request, call_next):
 
 @app.post("/mpic")
 async def handle_mpic(request: MpicRequest):
-    return await get_service().perform_mpic(request)
+    # noinspection PyUnresolvedReferences
+    async with logger.trace_timing('MPIC request processing'):
+        return await get_service().perform_mpic(request)
 
 
 @app.get("/healthz")

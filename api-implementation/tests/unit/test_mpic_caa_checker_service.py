@@ -69,6 +69,7 @@ class TestMpicCaaCheckerService:
             response = client.post('/caa', json=caa_check_request.model_dump())
         assert response.status_code == status.HTTP_200_OK
         log_contents = setup_logging.getvalue()
+        print(log_contents)
         assert all(text in log_contents for text in ['MpicCaaChecker', 'TRACE'])  # Verify the log level was set
 
     @staticmethod
