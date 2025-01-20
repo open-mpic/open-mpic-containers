@@ -49,12 +49,7 @@ class MpicCoordinatorService:
         self.default_perspective_count = int(os.environ['default_perspective_count'])
         self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
         self.hash_secret = os.environ['hash_secret']
-
-        if 'timeout_seconds' in os.environ:
-            self.timeout_seconds = float(os.environ['timeout_seconds'])
-        else:
-            # Default timeout seconds
-            self.timeout_seconds = 5
+        self.timeout_seconds = float(os.environ['timeout_seconds']) if 'timeout_seconds' in os.environ else 5
 
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
@@ -166,7 +161,6 @@ async def lifespan(app_instance: FastAPI):
 
     # Cleanup
     await service.shutdown()
-
 
 app = FastAPI(lifespan=lifespan)
 

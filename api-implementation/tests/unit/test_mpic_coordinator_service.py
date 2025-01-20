@@ -7,13 +7,13 @@ import pytest
 from importlib import resources
 from io import BytesIO
 from unittest.mock import patch, AsyncMock, MagicMock
-
 from aiohttp import ClientResponse
 from fastapi import status
 from fastapi.testclient import TestClient
 from multidict import CIMultiDictProxy, CIMultiDict
 from pydantic import TypeAdapter
 from requests import Response
+from yarl import URL
 
 from open_mpic_core.common_domain.check_request import DcvCheckRequest
 from open_mpic_core.common_domain.check_response import DcvCheckResponse, CaaCheckResponse
@@ -23,7 +23,6 @@ from open_mpic_core.common_domain.enum.dcv_validation_method import DcvValidatio
 from open_mpic_core.mpic_coordinator.domain.mpic_orchestration_parameters import MpicEffectiveOrchestrationParameters
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicCaaResponse
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
-from yarl import URL
 
 from mpic_coordinator_service.main import MpicCoordinatorService, PerspectiveEndpoints, PerspectiveEndpointInfo, app
 from open_mpic_core_test.test_util.valid_mpic_request_creator import ValidMpicRequestCreator
