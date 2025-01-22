@@ -1,3 +1,5 @@
+from multiprocessing.util import get_logger
+
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
 from opentelemetry.sdk.trace import TracerProvider
@@ -7,8 +9,12 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
 from opentelemetry.trace import NoOpTracerProvider
 
+from open_mpic_core.common_util.trace_level_logger import get_logger
+
 import os
 from enum import Enum
+
+logger = get_logger(__name__)
 
 
 class ExporterType(str, Enum):
@@ -17,26 +23,27 @@ class ExporterType(str, Enum):
     NONE = 'none'  # Explicit no-op exporter
 
 
+# noinspection PyUnresolvedReferences
 def initialize_tracing_configuration():
-    print("Initializing tracing configuration")
+    logger.debug("Initializing tracing configuration")
     """Initialize tracing configuration."""
     disabled = os.getenv('OTEL_SDK_DISABLED', 'True').lower() == 'true'
 
     # Get exporter type; using 'MPIC_' to not interfere with actual OpenTelemetry environment variables
     exporter_type = ExporterType(os.getenv("MPIC_OTEL_TRACES_EXPORTER", ExporterType.NONE))
 
-    print(f"OTEL is disabled? {disabled}")
+    logger.debug(f"Is OTEL disabled? {disabled}")
     # if exporter type is console, set that up
     if disabled or exporter_type == ExporterType.NONE:
-        print("Making a NoOpTracerProvider...")
+        logger.debug("Making a NoOpTracerProvider...")
         tracer_provider = NoOpTracerProvider()
     else:
         exporter = None
         if exporter_type == ExporterType.CONSOLE:
-            print("Making a ConsoleSpanExporter...")
+            logger.debug("Making a ConsoleSpanExporter...")
             exporter = ConsoleSpanExporter()
         elif exporter_type == ExporterType.OTLP:
-            print("Making an OTLPSpanExporter...")
+            logger.debug("Making an OTLPSpanExporter...")
             exporter = OTLPSpanExporter()  # reads env configuration for OTLP endpoint
 
         service_name = os.getenv('OTEL_SERVICE_NAME', 'mpic_service')

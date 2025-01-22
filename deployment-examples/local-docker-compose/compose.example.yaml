@@ -14,6 +14,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+    env_file:
+      - ./common_config/opentelemetry_config.env
 
   dcv_checker_2:
     image: ghcr.io/open-mpic/dcv_checker:latest
@@ -28,6 +30,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+    env_file:
+      - ./common_config/opentelemetry_config.env
 
   coordinator:
     image: ghcr.io/open-mpic/coordinator:latest
@@ -42,6 +46,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+    env_file:
+      - ./common_config/opentelemetry_config.env
     volumes:
       - ./resources:/app/resources
 
@@ -58,6 +64,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+    env_file:
+      - ./common_config/opentelemetry_config.env
 
   caa_checker_2:
     image: ghcr.io/open-mpic/caa_checker:latest
@@ -72,6 +80,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+    env_file:
+      - ./common_config/opentelemetry_config.env
 
   traefik:
     image: traefik:v2.9
