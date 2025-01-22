@@ -3,15 +3,15 @@ import os
 from fastapi import FastAPI  # type: ignore
 from pathlib import Path
 from dotenv import load_dotenv
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from open_mpic_core.common_domain.check_request import CaaCheckRequest
 from open_mpic_core.mpic_caa_checker.mpic_caa_checker import MpicCaaChecker
-from open_mpic_core.common_util.trace_level_logger import get_logger
+from common_configuration.opentelemetry_configuration import initialize_tracing_configuration
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
 load_dotenv(config_path)
-logger = get_logger(__name__)
 
 
 class MpicCaaCheckerService:
@@ -24,10 +24,6 @@ class MpicCaaCheckerService:
         return await self.caa_checker.check_caa(caa_request)
 
 
-# Global instance for Service
-_service = None
-
-
 def get_service() -> MpicCaaCheckerService:
     """
     Singleton pattern to avoid recreating the service on every API all
@@ -38,14 +34,17 @@ def get_service() -> MpicCaaCheckerService:
     return _service
 
 
+_service = None  # Global instance for Service
 app = FastAPI()
+initialize_tracing_configuration()
+FastAPIInstrumentor.instrument_app(app, excluded_urls='healthz', exclude_spans=['send', 'receive'])
 
 
 @app.post("/caa")
 async def handle_caa_check(request: CaaCheckRequest):
     # noinspection PyUnresolvedReferences
-    async with logger.trace_timing("Remote CAA check processing"):
-        return await get_service().check_caa(request)
+    # with tracer.start_as_current_span("Remote CAA check processing"):
+    return await get_service().check_caa(request)
 
 
 @app.get("/healthz")

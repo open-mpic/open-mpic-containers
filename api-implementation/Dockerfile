@@ -17,6 +17,7 @@ COPY pyproject.toml .
 
 # Copy the specific service code
 COPY ${SERVICE_PATH} .
+COPY ${SERVICE_PATH}/../common_configuration ./common_configuration
 
 # Create production environment and install dependencies
 # This will install the Python version specified in pyproject.toml

@@ -164,6 +164,8 @@ class TestMpicCoordinatorService:
         assert response.status_code == 500
 
     def service__should_coordinate_mpic_using_configured_mpic_coordinator(self, set_env_variables, mocker):
+        import os
+        print(f"\nOTEL_TRACES_EXPORTER = {os.getenv('OTEL_TRACES_EXPORTER')}")
         request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
         mock_response = TestMpicCoordinatorService.create_caa_mpic_response()
 
@@ -183,15 +185,12 @@ class TestMpicCoordinatorService:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {'status': 'healthy'}
 
-    def service__should_set_log_level_of_mpic_coordinator(self, set_env_variables, mocker, setup_logging):
+    def service__should_set_log_level_of_mpic_coordinator(self, set_env_variables, trace_logging_output, mocker):
+        perspectives_codes = TestMpicCoordinatorService.create_perspectives_config_dict().keys()
         request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
         mocked_perspective_responses = [
-            CaaCheckResponse(perspective_code='us-east-1', check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False)),
-            CaaCheckResponse(perspective_code='us-west-1', check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False)),
-            CaaCheckResponse(perspective_code='eu-west-2', check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False)),
-            CaaCheckResponse(perspective_code='eu-central-2', check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False)),
-            CaaCheckResponse(perspective_code='ap-northeast-1', check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False)),
-            CaaCheckResponse(perspective_code='ap-south-2', check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False)),
+            CaaCheckResponse(perspective_code=perspective_code, check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False))
+            for perspective_code in perspectives_codes
         ]
         mocked_validity_per_perspective = {response.perspective_code: response.check_passed for response in mocked_perspective_responses}
         mock_return = (mocked_perspective_responses, mocked_validity_per_perspective)
@@ -202,10 +201,26 @@ class TestMpicCoordinatorService:
 
         with TestClient(app) as client:
             response = client.post('/mpic', json=request.model_dump())
-        assert response.status_code == status.HTTP_200_OK
-        log_contents = setup_logging.getvalue()
+        print(response.text)
+        log_contents = trace_logging_output.getvalue()
         print(log_contents)
-        assert all(text in log_contents for text in ['MpicCoordinator', 'TRACE'])  # Verify the log level was set
+        assert response.status_code == status.HTTP_200_OK
+        assert all(text in log_contents for text in ['mpic_coordinator', 'TRACE'])  # Verify the log level was set
+
+    def service__should_trace_timing_of_mpic_check(self, set_env_variables, tracer_in_memory_exporter, mocker):
+        request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
+        mock_response = TestMpicCoordinatorService.create_caa_mpic_response()
+        awaitable_mock_response = AsyncMock(return_value=mock_response)
+        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=awaitable_mock_response)
+
+        with TestClient(app) as client:
+            client.post('/mpic', json=request.model_dump())
+        from opentelemetry.sdk.trace import ReadableSpan
+        spans: list[ReadableSpan] = tracer_in_memory_exporter.get_finished_spans()
+        for span in spans:
+            print(span.to_json())
+        assert len(spans) == 1
+        assert '/mpic' in spans[0].name
 
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:

@@ -1,10 +1,10 @@
 import time
-from unittest.mock import AsyncMock
-
 import pytest
 
+from unittest.mock import AsyncMock
 from fastapi import status
 from fastapi.testclient import TestClient
+
 from open_mpic_core.common_domain.check_response import DcvCheckResponse
 from open_mpic_core.common_domain.check_response_details import DcvHttpCheckResponseDetails
 from open_mpic_core.common_domain.enum.dcv_validation_method import DcvValidationMethod
@@ -37,8 +37,6 @@ class TestMpicDcvCheckerService:
     def service__should_do_dcv_check_using_configured_dcv_checker(self, set_env_variables, mocker):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
         mock_dcv_response = TestMpicDcvCheckerService.create_dcv_check_response()
-
-        # Use AsyncMock for async function
         awaitable_mock_response = AsyncMock(return_value=mock_dcv_response)
         mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.check_dcv', new=awaitable_mock_response)
 
@@ -76,16 +74,32 @@ class TestMpicDcvCheckerService:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {'status': 'healthy'}
 
-    def service__should_set_log_level_of_dcv_checker(self, set_env_variables, mocker, setup_logging):
+    def service__should_set_log_level_of_dcv_checker(self, set_env_variables, trace_logging_output, mocker):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
         mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.perform_http_based_validation',
                      return_value=TestMpicDcvCheckerService.create_dcv_check_response())
         with TestClient(app) as client:
             response = client.post('/dcv', json=dcv_check_request.model_dump())
         assert response.status_code == status.HTTP_200_OK
-        log_contents = setup_logging.getvalue()
+        log_contents = trace_logging_output.getvalue()
         print(log_contents)
-        assert all(text in log_contents for text in ['MpicDcvChecker', 'TRACE'])  # Verify the log level was set
+        assert all(text in log_contents for text in ['mpic_dcv_checker', 'TRACE'])  # Verify the log level was set
+
+    # test that the service is using opentelemetry tracing properly
+    def service__should_trace_timing_of_dcv_check(self, set_env_variables, tracer_in_memory_exporter, mocker):
+        dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
+        mock_dcv_response = TestMpicDcvCheckerService.create_dcv_check_response()
+        awaitable_mock_response = AsyncMock(return_value=mock_dcv_response)
+        mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.check_dcv', new=awaitable_mock_response)
+
+        with TestClient(app) as client:
+            client.post('/dcv', json=dcv_check_request.model_dump())
+        from opentelemetry.sdk.trace import ReadableSpan
+        spans: list[ReadableSpan] = tracer_in_memory_exporter.get_finished_spans()
+        for span in spans:
+            print(span.to_json())
+        assert len(spans) == 1
+        assert '/dcv' in spans[0].name
 
     @staticmethod
     def create_dcv_check_response():

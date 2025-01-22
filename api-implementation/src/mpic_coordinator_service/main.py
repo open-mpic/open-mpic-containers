@@ -1,16 +1,21 @@
 import os
 import json
-from contextlib import asynccontextmanager
 
 import yaml
 import aiohttp
 
+from enum import StrEnum
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, BaseModel, Field
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
 
 from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import MpicRequestValidationError
 from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import MpicRequestValidationMessages
@@ -21,13 +26,12 @@ from open_mpic_core.mpic_coordinator.mpic_coordinator import MpicCoordinator, Mp
 from open_mpic_core.common_domain.enum.check_type import CheckType
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
-from open_mpic_core.common_util.trace_level_logger import get_logger
 
+from common_configuration.opentelemetry_configuration import initialize_tracing_configuration
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
 load_dotenv(config_path)
-logger = get_logger(__name__)
 
 
 class PerspectiveEndpointInfo(BaseModel):
@@ -46,10 +50,10 @@ class MpicCoordinatorService:
         perspectives_json = os.environ['perspectives']
         perspectives = {code: PerspectiveEndpoints.model_validate(endpoints) for code, endpoints in json.loads(perspectives_json).items()}
         self.all_target_perspective_codes = list(perspectives.keys())
-        self.default_perspective_count = int(os.environ['default_perspective_count'])
-        self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
-        self.hash_secret = os.environ['hash_secret']
-        self.timeout_seconds = float(os.environ['timeout_seconds']) if 'timeout_seconds' in os.environ else 5
+        self.default_perspective_count = int(os.environ.get('default_perspective_count', 1))
+        self.global_max_attempts = int(os.environ.get('absolute_max_attempts'))
+        self.hash_secret = os.environ.get('hash_secret')
+        self.timeout_seconds = float(os.environ.get('timeout_seconds', 5.0))
 
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
@@ -78,12 +82,21 @@ class MpicCoordinatorService:
         self.mpic_request_adapter = TypeAdapter(MpicRequest)
         self.check_response_adapter = TypeAdapter(CheckResponse)
 
+        self.tracer = trace.get_tracer(__name__)
+
     async def initialize(self):
         if self._async_http_client is None:
             session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=self.timeout_seconds, sock_read=self.timeout_seconds)
             self._async_http_client = aiohttp.ClientSession(timeout=session_timeout)
 
+    # noinspection PyUnresolvedReferences
     async def shutdown(self):
+        provider = trace.get_tracer_provider()
+        # if provider has force_flush method, call it to ensure all spans are sent
+        if hasattr(provider, 'force_flush'):
+            trace.get_tracer_provider().force_flush()
+        if hasattr(provider, 'shutdown'):
+            trace.get_tracer_provider().shutdown()
         if self._async_http_client:
             await self._async_http_client.close()
             self._async_http_client = None
@@ -126,11 +139,12 @@ class MpicCoordinatorService:
         # Get the remote info from the data structure.
         endpoint_info: PerspectiveEndpointInfo = self.remotes_per_perspective_per_check_type[check_type][perspective.code]
 
-        async with self._async_http_client.post(
-                url=endpoint_info.url, headers=endpoint_info.headers, json=check_request.model_dump()
-        ) as response:
-            text = await response.text()
-            return self.check_response_adapter.validate_json(text)
+        with self.tracer.start_as_current_span(f"Remote {check_type.value} check processing for {perspective.code}"):
+            async with self._async_http_client.post(
+                    url=endpoint_info.url, headers=endpoint_info.headers, json=check_request.model_dump()
+            ) as response:
+                text = await response.text()
+                return self.check_response_adapter.validate_json(text)
 
     async def perform_mpic(self, mpic_request: MpicRequest) -> MpicResponse:
         return await self.mpic_coordinator.coordinate_mpic(mpic_request)
@@ -163,6 +177,8 @@ async def lifespan(app_instance: FastAPI):
     await service.shutdown()
 
 app = FastAPI(lifespan=lifespan)
+initialize_tracing_configuration()
+FastAPIInstrumentor.instrument_app(app, excluded_urls='healthz', exclude_spans=['send', 'receive'])
 
 
 # noinspection PyUnusedLocal
@@ -202,11 +218,23 @@ async def exception_handling_middleware(request: Request, call_next):
         )
 
 
+def configure_opentelemetry_tracing():
+    """
+    Configures the OpenTelemetry tracing based on environment variables
+    """
+    trace.set_tracer_provider(TracerProvider())
+
+    traces_destination = OpentelemetryTracesDestination(os.environ.get('opentelemetry_traces_destination', OpentelemetryTracesDestination.NONE))
+    if traces_destination == OpentelemetryTracesDestination.OTLP:
+        FastAPIInstrumentor.instrument_app(app, excluded_urls='healthz', exclude_spans=['send', 'receive'])
+    elif traces_destination == OpentelemetryTracesDestination.CONSOLE:
+        FastAPIInstrumentor.instrument_app(app, excluded_urls='healthz', exclude_spans=['send', 'receive'])
+
+
 @app.post("/mpic")
 async def handle_mpic(request: MpicRequest):
     # noinspection PyUnresolvedReferences
-    async with logger.trace_timing('MPIC request processing'):
-        return await get_service().perform_mpic(request)
+    return await get_service().perform_mpic(request)
 
 
 @app.get("/healthz")

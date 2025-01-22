@@ -5,22 +5,22 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 
 from open_mpic_core.common_domain.check_request import DcvCheckRequest
 from open_mpic_core.mpic_dcv_checker.mpic_dcv_checker import MpicDcvChecker
-from open_mpic_core.common_util.trace_level_logger import get_logger
 
+from common_configuration.opentelemetry_configuration import initialize_tracing_configuration
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
 load_dotenv(config_path)
-logger = get_logger(__name__)
 
 
 class MpicDcvCheckerService:
     def __init__(self):
-        self.perspective_code = os.environ['code']
-        self.verify_ssl = 'verify_ssl' not in os.environ or os.environ['verify_ssl'] == 'True'
+        self.perspective_code = os.environ.get('code')
+        self.verify_ssl = bool(os.environ.get('verify_ssl', False).lower()) is True
         self.dcv_checker = MpicDcvChecker(self.perspective_code, self.verify_ssl)
 
     async def initialize(self):
@@ -72,13 +72,14 @@ async def lifespan(app_instance: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+initialize_tracing_configuration()
+FastAPIInstrumentor.instrument_app(app, excluded_urls='healthz', exclude_spans=['send', 'receive'])
 
 
 @app.post("/dcv")
 async def perform_mpic(request: DcvCheckRequest):
     # noinspection PyUnresolvedReferences
-    async with logger.trace_timing('Remote DCV check processing'):
-        return await get_service().check_dcv(request)
+    return await get_service().check_dcv(request)
 
 
 @app.get("/healthz")
