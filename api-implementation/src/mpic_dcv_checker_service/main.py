@@ -21,9 +21,6 @@ class MpicDcvCheckerService:
         self.verify_ssl = 'verify_ssl' not in os.environ or os.environ['verify_ssl'] == 'True'
         self.dcv_checker = MpicDcvChecker(self.perspective_code, self.verify_ssl)
 
-    async def initialize(self):
-        await self.dcv_checker.initialize()
-
     async def shutdown(self):
         await self.dcv_checker.shutdown()
 
@@ -61,11 +58,7 @@ def get_service() -> MpicDcvCheckerService:
 async def lifespan(app_instance: FastAPI):
     # Initialize services
     service = get_service()
-    await service.initialize()
-
     yield
-
-    # Cleanup
     await service.shutdown()
 
 
