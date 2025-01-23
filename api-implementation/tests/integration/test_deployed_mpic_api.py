@@ -43,11 +43,10 @@ class TestDeployedMpicApi:
 
         print("\nRequest:\n", json.dumps(request.model_dump(), indent=4))  # pretty print request body
         response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
-        # response_body_as_json = response.json()
-        assert response.status_code == 200
         # assert response body has a list of perspectives with length 2, and each element has response code 200
+        print("\nResponse:\n", json.dumps(response.text, indent=4))  # pretty print response body
+        assert response.status_code == 200
         mpic_response = self.mpic_response_adapter.validate_json(response.text)
-        print("\nResponse:\n", json.dumps(mpic_response.model_dump(), indent=4))  # pretty print response body
         perspectives_list = mpic_response.perspectives
         assert mpic_response.is_valid is True
         assert mpic_response.domain_or_ip_target == request.domain_or_ip_target

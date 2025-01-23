@@ -23,4 +23,4 @@ COPY ${SERVICE_PATH} .
 RUN hatch env create production
 
 # Run the service using uvicorn with the production environment
-CMD ["hatch", "env", "run", "-e", "production", "--", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers"]
+CMD ["hatch", "env", "run", "-e", "production", "--", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers", "--log-config", "/app/config/log_config.yaml"]
