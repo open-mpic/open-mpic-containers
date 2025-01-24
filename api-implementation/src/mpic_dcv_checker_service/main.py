@@ -17,9 +17,9 @@ load_dotenv(config_path)
 
 class MpicDcvCheckerService:
     def __init__(self):
-        self.perspective_code = os.environ['code']
-        self.verify_ssl = 'verify_ssl' not in os.environ or os.environ['verify_ssl'] == 'True'
-        self.dcv_checker = MpicDcvChecker(self.perspective_code, self.verify_ssl)
+        self.perspective_code: Optional[str] = os.environ.get('code')
+        self.verify_ssl: bool = os.environ.get('verify_ssl', 'True').lower() == 'true'
+        self.dcv_checker: MpicDcvChecker = MpicDcvChecker(self.perspective_code, self.verify_ssl)
 
     async def initialize(self):
         await self.dcv_checker.initialize()

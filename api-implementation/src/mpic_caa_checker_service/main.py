@@ -15,9 +15,9 @@ load_dotenv(config_path)
 
 class MpicCaaCheckerService:
     def __init__(self):
-        self.perspective_code = os.environ['code']
-        self.default_caa_domain_list = os.environ['default_caa_domains'].split("|")
-        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code)
+        self.perspective_code: Optional[str] = os.environ.get('code')
+        self.default_caa_domain_list: List[str] = os.environ.get('default_caa_domains', '').split("|")
+        self.caa_checker: MpicCaaChecker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code)
 
     async def check_caa(self, caa_request: CaaCheckRequest):
         return await self.caa_checker.check_caa(caa_request)

@@ -46,23 +46,12 @@ class MpicCoordinatorService:
             perspectives = {code: PerspectiveEndpoints.model_validate(endpoints) for code, endpoints in json.loads(perspectives_json).items()}
         except json.JSONDecodeError:
             perspectives = {}
+
         self.all_target_perspective_codes = list(perspectives.keys())
-        try:
-            self.default_perspective_count = int(os.environ.get('default_perspective_count', 2))
-        except ValueError:
-            self.default_perspective_count = 2
-
-        try:
-            self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
-        except ValueError:
-            self.global_max_attempts = None
-        self.hash_secret = os.environ['hash_secret']
-
-        if "timeout_seconds" in os.environ:
-            self.timeout_seconds = float(os.environ['timeout_seconds'])
-        else:
-            # Default timeout seconds
-            self.timeout_seconds = 5
+        self.default_perspective_count = int(os.environ.get('default_perspective_count', 2))
+        self.global_max_attempts = int(os.environ.get('absolute_max_attempts')) or None
+        self.hash_secret = os.environ.get('hash_secret', '')
+        self.timeout_seconds = float(os.environ.get('timeout_seconds', 5))
 
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
