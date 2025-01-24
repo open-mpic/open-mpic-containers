@@ -12,19 +12,26 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, BaseModel, Field
 
-from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import MpicRequestValidationError
-from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import MpicRequestValidationMessages
+from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import (
+    MpicRequestValidationError,
+)
+from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import (
+    MpicRequestValidationMessages,
+)
 from open_mpic_core.common_domain.check_request import BaseCheckRequest
 from open_mpic_core.common_domain.check_response import CheckResponse
 from open_mpic_core.mpic_coordinator.domain.mpic_request import MpicRequest
-from open_mpic_core.mpic_coordinator.mpic_coordinator import MpicCoordinator, MpicCoordinatorConfiguration
+from open_mpic_core.mpic_coordinator.mpic_coordinator import (
+    MpicCoordinator,
+    MpicCoordinatorConfiguration,
+)
 from open_mpic_core.common_domain.enum.check_type import CheckType
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
 
 
 # 'config' directory should be a sibling of the directory containing this file
-config_path = Path(__file__).parent / 'config' / 'app.conf'
+config_path = Path(__file__).parent / "config" / "app.conf"
 load_dotenv(config_path)
 
 
@@ -41,39 +48,54 @@ class PerspectiveEndpoints(BaseModel):
 class MpicCoordinatorService:
     def __init__(self):
         # load environment variables
-        perspectives_json = os.environ.get('perspectives', '{}')
+        perspectives_json = os.environ.get("perspectives", "{}")
         try:
-            perspectives = {code: PerspectiveEndpoints.model_validate(endpoints) for code, endpoints in json.loads(perspectives_json).items()}
+            perspectives = {
+                code: PerspectiveEndpoints.model_validate(endpoints)
+                for code, endpoints in json.loads(perspectives_json).items()
+            }
         except json.JSONDecodeError:
             perspectives = {}
 
         self.all_target_perspective_codes = list(perspectives.keys())
-        self.default_perspective_count = int(os.environ.get('default_perspective_count', 2))
-        self.global_max_attempts = int(os.environ.get('absolute_max_attempts')) or None
-        self.hash_secret = os.environ.get('hash_secret', '')
-        self.timeout_seconds = float(os.environ.get('timeout_seconds', 5))
+        self.default_perspective_count = int(
+            os.environ.get("default_perspective_count", 2)
+        )
+        self.global_max_attempts = int(os.environ.get("absolute_max_attempts")) or None
+        self.hash_secret = os.environ.get("hash_secret", "")
+        self.timeout_seconds = float(os.environ.get("timeout_seconds", 5))
 
         self.remotes_per_perspective_per_check_type = {
-            CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
-            CheckType.CAA: {perspective_code: perspective_config.caa_endpoint_info for perspective_code, perspective_config in perspectives.items()}
+            CheckType.DCV: {
+                perspective_code: perspective_config.dcv_endpoint_info
+                for perspective_code, perspective_config in perspectives.items()
+            },
+            CheckType.CAA: {
+                perspective_code: perspective_config.caa_endpoint_info
+                for perspective_code, perspective_config in perspectives.items()
+            },
         }
 
-        all_possible_perspectives_by_code = MpicCoordinatorService.load_available_perspectives_config()
-        self.target_perspectives = MpicCoordinatorService.convert_codes_to_remote_perspectives(
-            self.all_target_perspective_codes, all_possible_perspectives_by_code)
+        all_possible_perspectives_by_code = (
+            MpicCoordinatorService.load_available_perspectives_config()
+        )
+        self.target_perspectives = (
+            MpicCoordinatorService.convert_codes_to_remote_perspectives(
+                self.all_target_perspective_codes, all_possible_perspectives_by_code
+            )
+        )
 
         self.mpic_coordinator_configuration = MpicCoordinatorConfiguration(
             self.target_perspectives,
             self.default_perspective_count,
             self.global_max_attempts,
-            self.hash_secret
+            self.hash_secret,
         )
 
         self._async_http_client = None
 
         self.mpic_coordinator = MpicCoordinator(
-            self.call_remote_perspective,
-            self.mpic_coordinator_configuration
+            self.call_remote_perspective, self.mpic_coordinator_configuration
         )
 
         # for correct deserialization of responses based on discriminator field (check type)
@@ -82,7 +104,11 @@ class MpicCoordinatorService:
 
     async def initialize(self):
         if self._async_http_client is None:
-            session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=self.timeout_seconds, sock_read=self.timeout_seconds)
+            session_timeout = aiohttp.ClientTimeout(
+                total=None,
+                sock_connect=self.timeout_seconds,
+                sock_read=self.timeout_seconds,
+            )
             self._async_http_client = aiohttp.ClientSession(timeout=session_timeout)
 
     async def shutdown(self):
@@ -93,43 +119,65 @@ class MpicCoordinatorService:
     @staticmethod
     def load_available_perspectives_config() -> dict[str, RemotePerspective]:
         """
-        Reads in the available perspectives from a configuration yaml and returns them as a dict (map).
+        Reads in the available perspectives from a configuration yaml or environment variable and returns them as a dict (map).
         Expects the yaml to be in the resources folder, next to the app folder containing this file.
         :return: dict of available perspectives with region code as key
         """
-        resource_path = Path(__file__).parent / 'resources' / 'available_perspectives.yaml'
+        perspectives_yaml = os.environ.get("available_perspectives")
 
-        with resource_path.open() as file:
-            region_config_yaml = yaml.safe_load(file)
-            region_type_adapter = TypeAdapter(list[RemotePerspective])
-            regions_list = region_type_adapter.validate_python(region_config_yaml['available_regions'])
-            regions_dict = {region.code: region for region in regions_list}
-            return regions_dict
+        if perspectives_yaml:
+            region_config_yaml = yaml.safe_load(perspectives_yaml)
+        else:
+            resource_path = (
+                Path(__file__).parent / "resources" / "available_perspectives.yaml"
+            )
+            with resource_path.open() as file:
+                region_config_yaml = yaml.safe_load(file)
+
+        region_type_adapter = TypeAdapter(list[RemotePerspective])
+        regions_list = region_type_adapter.validate_python(
+            region_config_yaml["available_regions"]
+        )
+        regions_dict = {region.code: region for region in regions_list}
+        return regions_dict
 
     @staticmethod
-    def convert_codes_to_remote_perspectives(perspective_codes: list[str],
-                                             all_possible_perspectives_by_code: dict[str, RemotePerspective]) -> list[RemotePerspective]:
+    def convert_codes_to_remote_perspectives(
+        perspective_codes: list[str],
+        all_possible_perspectives_by_code: dict[str, RemotePerspective],
+    ) -> list[RemotePerspective]:
         remote_perspectives = []
 
         for perspective_code in perspective_codes:
             if perspective_code not in all_possible_perspectives_by_code.keys():
                 continue  # TODO throw an error? check this case in the validator?
             else:
-                fully_defined_perspective = all_possible_perspectives_by_code[perspective_code]
+                fully_defined_perspective = all_possible_perspectives_by_code[
+                    perspective_code
+                ]
                 remote_perspectives.append(fully_defined_perspective)
 
         return remote_perspectives
 
     # This function MUST validate its response and return a proper open_mpic_core object type.
-    async def call_remote_perspective(self, perspective: RemotePerspective, check_type: CheckType, check_request: BaseCheckRequest) -> CheckResponse:
+    async def call_remote_perspective(
+        self,
+        perspective: RemotePerspective,
+        check_type: CheckType,
+        check_request: BaseCheckRequest,
+    ) -> CheckResponse:
         if self._async_http_client is None:
             raise RuntimeError("Service not initialized - call initialize() first")
 
         # Get the remote info from the data structure.
-        endpoint_info: PerspectiveEndpointInfo = self.remotes_per_perspective_per_check_type[check_type][perspective.code]
+        endpoint_info: PerspectiveEndpointInfo = (
+            self.remotes_per_perspective_per_check_type[check_type][perspective.code]
+        )
 
         async with self._async_http_client.post(
-                url=endpoint_info.url, headers=endpoint_info.headers, json=check_request.model_dump()
+            url=endpoint_info.url,
+            headers=endpoint_info.headers,
+            json=check_request.model_dump(),
         ) as response:
             text = await response.text()
             return self.check_response_adapter.validate_json(text)
@@ -175,34 +223,35 @@ async def validation_exception_handler(request: Request, e: RequestValidationErr
         status_code=status.HTTP_400_BAD_REQUEST,  # If you want to use 400 instead of 422
         content={
             "error": MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key,
-            "validation_issues": e.errors()
-        }
+            "validation_issues": e.errors(),
+        },
     )
 
 
 # noinspection PyUnusedLocal
 @app.exception_handler(MpicRequestValidationError)
-async def mpic_validation_exception_handler(request: Request, e: MpicRequestValidationError):
+async def mpic_validation_exception_handler(
+    request: Request, e: MpicRequestValidationError
+):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,  # If you want to use 400 instead of 422
         content={
             "error": MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key,
-            "validation_issues": json.loads(e.__notes__[0])
-        }
+            "validation_issues": json.loads(e.__notes__[0]),
+        },
     )
 
 
-@app.middleware("http")  # This is a middleware that catches general exceptions and returns a 500 response
+@app.middleware(
+    "http"
+)  # This is a middleware that catches general exceptions and returns a 500 response
 async def exception_handling_middleware(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception as e:
         # Do some logging here
         return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "error": str(e)
-            }
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": str(e)}
         )
 
 
