@@ -15,7 +15,7 @@ load_dotenv(config_path)
 
 class MpicCaaCheckerService:
     def __init__(self):
-        self.perspective_code: Optional[str] = os.environ.get('code')
+        self.perspective_code: Optional[str] = os.environ.get('code', None)
         self.default_caa_domain_list: List[str] = os.environ.get('default_caa_domains', '').split("|")
         self.caa_checker: MpicCaaChecker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code)
 
