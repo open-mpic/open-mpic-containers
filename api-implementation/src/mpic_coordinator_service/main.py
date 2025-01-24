@@ -1,10 +1,12 @@
 import os
 import json
-from contextlib import asynccontextmanager
-
+import tomllib
+import traceback
+import importlib.metadata
 import yaml
 import aiohttp
 
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from pathlib import Path
 from fastapi import FastAPI, Request, status
@@ -22,7 +24,6 @@ from open_mpic_core.common_domain.enum.check_type import CheckType
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
 from open_mpic_core.common_util.trace_level_logger import get_logger
-
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
@@ -194,6 +195,7 @@ async def exception_handling_middleware(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception as e:
+        print(traceback.format_exc())
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -212,3 +214,20 @@ async def handle_mpic(request: MpicRequest):
 @app.get("/healthz")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/configz")
+async def get_config():
+    current = Path(__file__).parent
+    for _ in range(3):  # Try up to 3 levels up (Docker flattens the file structure a fair bit)
+        test_path = current / 'pyproject.toml'
+        if test_path.exists():
+            with test_path.open(mode='rb') as file:
+                pyproject = tomllib.load(file)
+                return {
+                    "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
+                    "app_version": pyproject["project"]["version"],
+                    "mpic_core_version": importlib.metadata.version("open-mpic-core")
+                }
+        current = current.parent
+    raise FileNotFoundError("Could not find pyproject.toml")
