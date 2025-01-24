@@ -41,11 +41,21 @@ class PerspectiveEndpoints(BaseModel):
 class MpicCoordinatorService:
     def __init__(self):
         # load environment variables
-        perspectives_json = os.environ['perspectives']
-        perspectives = {code: PerspectiveEndpoints.model_validate(endpoints) for code, endpoints in json.loads(perspectives_json).items()}
+        perspectives_json = os.environ.get('perspectives', '{}')
+        try:
+            perspectives = {code: PerspectiveEndpoints.model_validate(endpoints) for code, endpoints in json.loads(perspectives_json).items()}
+        except json.JSONDecodeError:
+            perspectives = {}
         self.all_target_perspective_codes = list(perspectives.keys())
-        self.default_perspective_count = int(os.environ['default_perspective_count'])
-        self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
+        try:
+            self.default_perspective_count = int(os.environ.get('default_perspective_count', 2))
+        except ValueError:
+            self.default_perspective_count = 2
+
+        try:
+            self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
+        except ValueError:
+            self.global_max_attempts = None
         self.hash_secret = os.environ['hash_secret']
 
         if "timeout_seconds" in os.environ:
