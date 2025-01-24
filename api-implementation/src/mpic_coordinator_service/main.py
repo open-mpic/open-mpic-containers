@@ -21,11 +21,13 @@ from open_mpic_core.mpic_coordinator.mpic_coordinator import MpicCoordinator, Mp
 from open_mpic_core.common_domain.enum.check_type import CheckType
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
+from open_mpic_core.common_util.trace_level_logger import get_logger
 
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
 load_dotenv(config_path)
+logger = get_logger(__name__)
 
 
 class PerspectiveEndpointInfo(BaseModel):
@@ -47,12 +49,7 @@ class MpicCoordinatorService:
         self.default_perspective_count = int(os.environ['default_perspective_count'])
         self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
         self.hash_secret = os.environ['hash_secret']
-
-        if "timeout_seconds" in os.environ:
-            self.timeout_seconds = float(os.environ['timeout_seconds'])
-        else:
-            # Default timeout seconds
-            self.timeout_seconds = 5
+        self.timeout_seconds = float(os.environ['timeout_seconds']) if 'timeout_seconds' in os.environ else 5
 
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
@@ -73,8 +70,8 @@ class MpicCoordinatorService:
         self._async_http_client = None
 
         self.mpic_coordinator = MpicCoordinator(
-            self.call_remote_perspective,
-            self.mpic_coordinator_configuration
+            call_remote_perspective_function=self.call_remote_perspective,
+            mpic_coordinator_configuration=self.mpic_coordinator_configuration
         )
 
         # for correct deserialization of responses based on discriminator field (check type)
@@ -165,7 +162,6 @@ async def lifespan(app_instance: FastAPI):
     # Cleanup
     await service.shutdown()
 
-
 app = FastAPI(lifespan=lifespan)
 
 
@@ -198,7 +194,6 @@ async def exception_handling_middleware(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception as e:
-        # Do some logging here
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content={
@@ -209,7 +204,9 @@ async def exception_handling_middleware(request: Request, call_next):
 
 @app.post("/mpic")
 async def handle_mpic(request: MpicRequest):
-    return await get_service().perform_mpic(request)
+    # noinspection PyUnresolvedReferences
+    async with logger.trace_timing('MPIC request processing'):
+        return await get_service().perform_mpic(request)
 
 
 @app.get("/healthz")

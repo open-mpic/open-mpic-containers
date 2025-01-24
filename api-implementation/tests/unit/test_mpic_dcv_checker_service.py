@@ -76,6 +76,17 @@ class TestMpicDcvCheckerService:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {'status': 'healthy'}
 
+    def service__should_set_log_level_of_dcv_checker(self, set_env_variables, mocker, setup_logging):
+        dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
+        mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.perform_http_based_validation',
+                     return_value=TestMpicDcvCheckerService.create_dcv_check_response())
+        with TestClient(app) as client:
+            response = client.post('/dcv', json=dcv_check_request.model_dump())
+        assert response.status_code == status.HTTP_200_OK
+        log_contents = setup_logging.getvalue()
+        print(log_contents)
+        assert all(text in log_contents for text in ['MpicDcvChecker', 'TRACE'])  # Verify the log level was set
+
     @staticmethod
     def create_dcv_check_response():
         return DcvCheckResponse(perspective_code='us-east-1', check_passed=True,

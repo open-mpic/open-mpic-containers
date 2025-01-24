@@ -2,7 +2,10 @@ name: open-mpic
 
 services:
   dcv_checker_1:
-    image: ghcr.io/open-mpic/dcv_checker:latest
+    build:
+      context: ../../api-implementation
+      args:
+        SERVICE_PATH: "src/mpic_dcv_checker_service"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dcv1.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-1`)"
@@ -16,7 +19,10 @@ services:
         target: /app/config/log_config.yaml
 
   dcv_checker_2:
-    image: ghcr.io/open-mpic/dcv_checker:latest
+    build:
+      context: ../../api-implementation
+      args:
+        SERVICE_PATH: "src/mpic_dcv_checker_service"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.dcv2.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-2`)"
@@ -30,7 +36,10 @@ services:
         target: /app/config/log_config.yaml
 
   coordinator:
-    image: ghcr.io/open-mpic/coordinator:latest
+    build:
+      context: ../../api-implementation
+      args:
+        SERVICE_PATH: "src/mpic_coordinator_service"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.coordinator.rule=Host(`localhost`) && PathPrefix(`/mpic-coordinator`)"
@@ -46,7 +55,10 @@ services:
       - ./resources:/app/resources
 
   caa_checker_1:
-    image: ghcr.io/open-mpic/caa_checker:latest
+    build:
+      context: ../../api-implementation
+      args:
+        SERVICE_PATH: "src/mpic_caa_checker_service"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.caa1.rule=Host(`localhost`) && PathPrefix(`/caa-checker-1`)"
@@ -60,7 +72,10 @@ services:
         target: /app/config/log_config.yaml
 
   caa_checker_2:
-    image: ghcr.io/open-mpic/caa_checker:latest
+    build:
+      context: ../../api-implementation
+      args:
+        SERVICE_PATH: "src/mpic_caa_checker_service"
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.caa2.rule=Host(`localhost`) && PathPrefix(`/caa-checker-2`)"
