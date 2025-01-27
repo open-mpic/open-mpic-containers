@@ -10,7 +10,6 @@ from open_mpic_core.common_domain.check_request import DcvCheckRequest
 from open_mpic_core.mpic_dcv_checker.mpic_dcv_checker import MpicDcvChecker
 from open_mpic_core.common_util.trace_level_logger import get_logger
 
-
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
 load_dotenv(config_path)
