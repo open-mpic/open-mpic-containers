@@ -1,7 +1,6 @@
 import os
 import json
 import tomllib
-import traceback
 import importlib.metadata
 import yaml
 import aiohttp
@@ -14,16 +13,13 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, BaseModel, Field
 
-from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import MpicRequestValidationError
-from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import MpicRequestValidationMessages
-from open_mpic_core.common_domain.check_request import BaseCheckRequest
-from open_mpic_core.common_domain.check_response import CheckResponse
-from open_mpic_core.mpic_coordinator.domain.mpic_request import MpicRequest
-from open_mpic_core.mpic_coordinator.mpic_coordinator import MpicCoordinator, MpicCoordinatorConfiguration
-from open_mpic_core.common_domain.enum.check_type import CheckType
-from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
-from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
-from open_mpic_core.common_util.trace_level_logger import get_logger
+from open_mpic_core import MpicRequest, MpicResponse
+from open_mpic_core import MpicRequestValidationError, MpicRequestValidationMessages
+from open_mpic_core import CheckType
+from open_mpic_core import CheckRequest, CheckResponse
+from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
+from open_mpic_core import RemotePerspective
+from open_mpic_core import get_logger
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / 'config' / 'app.conf'
@@ -120,7 +116,7 @@ class MpicCoordinatorService:
         return remote_perspectives
 
     # This function MUST validate its response and return a proper open_mpic_core object type.
-    async def call_remote_perspective(self, perspective: RemotePerspective, check_type: CheckType, check_request: BaseCheckRequest) -> CheckResponse:
+    async def call_remote_perspective(self, perspective: RemotePerspective, check_type: CheckType, check_request: CheckRequest) -> CheckResponse:
         if self._async_http_client is None:
             raise RuntimeError("Service not initialized - call initialize() first")
 
