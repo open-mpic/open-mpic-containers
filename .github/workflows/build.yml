@@ -65,7 +65,6 @@ jobs:
         with:
           load: true
           context: api-implementation
-          platforms: linux/amd64,linux/arm64
           build-args: |
             PYTHON_VERSION=${{ steps.python-version.outputs.PYTHON_VERSION }}
             SERVICE_PATH=src/mpic_${{ matrix.service }}_service
