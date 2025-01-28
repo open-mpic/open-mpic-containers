@@ -22,7 +22,7 @@ from open_mpic_core import RemotePerspective
 from open_mpic_core import get_logger
 
 # 'config' directory should be a sibling of the directory containing this file
-config_path = Path(__file__).parent / 'config' / 'app.conf'
+config_path = Path(__file__).parent / "config" / "app.conf"
 load_dotenv(config_path)
 logger = get_logger(__name__)
 
@@ -40,35 +40,44 @@ class PerspectiveEndpoints(BaseModel):
 class MpicCoordinatorService:
     def __init__(self):
         # load environment variables
-        perspectives_json = os.environ['perspectives']
-        perspectives = {code: PerspectiveEndpoints.model_validate(endpoints) for code, endpoints in json.loads(perspectives_json).items()}
+        perspectives_json = os.environ["perspectives"]
+        perspectives = {
+            code: PerspectiveEndpoints.model_validate(endpoints)
+            for code, endpoints in json.loads(perspectives_json).items()
+        }
         self.all_target_perspective_codes = list(perspectives.keys())
-        self.default_perspective_count = int(os.environ['default_perspective_count'])
-        self.global_max_attempts = int(os.environ['absolute_max_attempts']) if 'absolute_max_attempts' in os.environ else None
-        self.hash_secret = os.environ['hash_secret']
-        self.timeout_seconds = float(os.environ['timeout_seconds']) if 'timeout_seconds' in os.environ else 5
+        self.default_perspective_count = int(os.environ["default_perspective_count"])
+        self.global_max_attempts = (
+            int(os.environ["absolute_max_attempts"]) if "absolute_max_attempts" in os.environ else None
+        )
+        self.hash_secret = os.environ["hash_secret"]
+        self.timeout_seconds = float(os.environ["timeout_seconds"]) if "timeout_seconds" in os.environ else 5
 
         self.remotes_per_perspective_per_check_type = {
-            CheckType.DCV: {perspective_code: perspective_config.dcv_endpoint_info for perspective_code, perspective_config in perspectives.items()},
-            CheckType.CAA: {perspective_code: perspective_config.caa_endpoint_info for perspective_code, perspective_config in perspectives.items()}
+            CheckType.DCV: {
+                perspective_code: perspective_config.dcv_endpoint_info
+                for perspective_code, perspective_config in perspectives.items()
+            },
+            CheckType.CAA: {
+                perspective_code: perspective_config.caa_endpoint_info
+                for perspective_code, perspective_config in perspectives.items()
+            },
         }
 
         all_possible_perspectives_by_code = MpicCoordinatorService.load_available_perspectives_config()
         self.target_perspectives = MpicCoordinatorService.convert_codes_to_remote_perspectives(
-            self.all_target_perspective_codes, all_possible_perspectives_by_code)
+            self.all_target_perspective_codes, all_possible_perspectives_by_code
+        )
 
         self.mpic_coordinator_configuration = MpicCoordinatorConfiguration(
-            self.target_perspectives,
-            self.default_perspective_count,
-            self.global_max_attempts,
-            self.hash_secret
+            self.target_perspectives, self.default_perspective_count, self.global_max_attempts, self.hash_secret
         )
 
         self._async_http_client = None
 
         self.mpic_coordinator = MpicCoordinator(
             call_remote_perspective_function=self.call_remote_perspective,
-            mpic_coordinator_configuration=self.mpic_coordinator_configuration
+            mpic_coordinator_configuration=self.mpic_coordinator_configuration,
         )
 
         # for correct deserialization of responses based on discriminator field (check type)
@@ -77,7 +86,9 @@ class MpicCoordinatorService:
 
     async def initialize(self):
         if self._async_http_client is None:
-            session_timeout = aiohttp.ClientTimeout(total=None, sock_connect=self.timeout_seconds, sock_read=self.timeout_seconds)
+            session_timeout = aiohttp.ClientTimeout(
+                total=None, sock_connect=self.timeout_seconds, sock_read=self.timeout_seconds
+            )
             self._async_http_client = aiohttp.ClientSession(timeout=session_timeout)
 
     async def shutdown(self):
@@ -92,18 +103,19 @@ class MpicCoordinatorService:
         Expects the yaml to be in the resources folder, next to the app folder containing this file.
         :return: dict of available perspectives with region code as key
         """
-        resource_path = Path(__file__).parent / 'resources' / 'available_perspectives.yaml'
+        resource_path = Path(__file__).parent / "resources" / "available_perspectives.yaml"
 
         with resource_path.open() as file:
             region_config_yaml = yaml.safe_load(file)
             region_type_adapter = TypeAdapter(list[RemotePerspective])
-            regions_list = region_type_adapter.validate_python(region_config_yaml['available_regions'])
+            regions_list = region_type_adapter.validate_python(region_config_yaml["available_regions"])
             regions_dict = {region.code: region for region in regions_list}
             return regions_dict
 
     @staticmethod
-    def convert_codes_to_remote_perspectives(perspective_codes: list[str],
-                                             all_possible_perspectives_by_code: dict[str, RemotePerspective]) -> list[RemotePerspective]:
+    def convert_codes_to_remote_perspectives(
+        perspective_codes: list[str], all_possible_perspectives_by_code: dict[str, RemotePerspective]
+    ) -> list[RemotePerspective]:
         remote_perspectives = []
 
         for perspective_code in perspective_codes:
@@ -116,15 +128,19 @@ class MpicCoordinatorService:
         return remote_perspectives
 
     # This function MUST validate its response and return a proper open_mpic_core object type.
-    async def call_remote_perspective(self, perspective: RemotePerspective, check_type: CheckType, check_request: CheckRequest) -> CheckResponse:
+    async def call_remote_perspective(
+        self, perspective: RemotePerspective, check_type: CheckType, check_request: CheckRequest
+    ) -> CheckResponse:
         if self._async_http_client is None:
             raise RuntimeError("Service not initialized - call initialize() first")
 
         # Get the remote info from the data structure.
-        endpoint_info: PerspectiveEndpointInfo = self.remotes_per_perspective_per_check_type[check_type][perspective.code]
+        endpoint_info: PerspectiveEndpointInfo = self.remotes_per_perspective_per_check_type[check_type][
+            perspective.code
+        ]
 
         async with self._async_http_client.post(
-                url=endpoint_info.url, headers=endpoint_info.headers, json=check_request.model_dump()
+            url=endpoint_info.url, headers=endpoint_info.headers, json=check_request.model_dump()
         ) as response:
             text = await response.text()
             return self.check_response_adapter.validate_json(text)
@@ -159,6 +175,7 @@ async def lifespan(app_instance: FastAPI):
     # Cleanup
     await service.shutdown()
 
+
 app = FastAPI(lifespan=lifespan)
 
 
@@ -167,10 +184,7 @@ app = FastAPI(lifespan=lifespan)
 async def validation_exception_handler(request: Request, e: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,  # If you want to use 400 instead of 422
-        content={
-            "error": MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key,
-            "validation_issues": e.errors()
-        }
+        content={"error": MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key, "validation_issues": e.errors()},
     )
 
 
@@ -181,8 +195,8 @@ async def mpic_validation_exception_handler(request: Request, e: MpicRequestVali
         status_code=status.HTTP_400_BAD_REQUEST,  # If you want to use 400 instead of 422
         content={
             "error": MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key,
-            "validation_issues": json.loads(e.__notes__[0])
-        }
+            "validation_issues": json.loads(e.__notes__[0]),
+        },
     )
 
 
@@ -192,18 +206,13 @@ async def exception_handling_middleware(request: Request, call_next):
         return await call_next(request)
     except Exception as e:
         # Do some logging here
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={
-                "error": str(e)
-            }
-        )
+        return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": str(e)})
 
 
 @app.post("/mpic")
 async def handle_mpic(request: MpicRequest):
     # noinspection PyUnresolvedReferences
-    async with logger.trace_timing('MPIC request processing'):
+    async with logger.trace_timing("MPIC request processing"):
         return await get_service().perform_mpic(request)
 
 
@@ -216,14 +225,14 @@ async def health_check():
 async def get_config():
     current = Path(__file__).parent
     for _ in range(3):  # Try up to 3 levels up (Docker flattens the file structure a fair bit)
-        test_path = current / 'pyproject.toml'
+        test_path = current / "pyproject.toml"
         if test_path.exists():
-            with test_path.open(mode='rb') as file:
+            with test_path.open(mode="rb") as file:
                 pyproject = tomllib.load(file)
                 return {
                     "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
                     "app_version": pyproject["project"]["version"],
-                    "mpic_core_version": importlib.metadata.version("open-mpic-core")
+                    "mpic_core_version": importlib.metadata.version("open-mpic-core"),
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")
