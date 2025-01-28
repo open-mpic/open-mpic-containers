@@ -31,10 +31,11 @@ dependencies = [
     "dnspython==2.6.1",
     "pydantic==2.8.2",
     "fastapi[standard]>=0.113.0,<0.114.0",
-#    "open-mpic-core @ git+https://github.com/open-mpic/open-mpic-core-python.git@ds-trace-logging",
-    "open-mpic-core==4.6.1",
+#    "open-mpic-core @ git+https://github.com/open-mpic/open-mpic-core-python.git@ds-python-tlc",
+    "open-mpic-core==4.6.2",
     "aiohttp==3.11.11",
     "uvicorn>=0.22.0,<0.23.0",
+    "black==24.8.0",
 ]
 
 [project.optional-dependencies]
@@ -119,3 +120,6 @@ include_namespace_packages = true
 omit = [
     "*/src/*/__about__.py",
 ]
+
+[tool.black]
+line-length = 120

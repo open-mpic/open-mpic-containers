@@ -15,14 +15,13 @@ from pydantic import TypeAdapter
 from requests import Response
 from yarl import URL
 
-from open_mpic_core.common_domain.check_request import DcvCheckRequest
-from open_mpic_core.common_domain.check_response import DcvCheckResponse, CaaCheckResponse
-from open_mpic_core.common_domain.check_response_details import DcvDnsCheckResponseDetails, CaaCheckResponseDetails
-from open_mpic_core.common_domain.enum.check_type import CheckType
-from open_mpic_core.common_domain.enum.dcv_validation_method import DcvValidationMethod
-from open_mpic_core.mpic_coordinator.domain.mpic_orchestration_parameters import MpicEffectiveOrchestrationParameters
-from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicCaaResponse
-from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
+from open_mpic_core import DcvCheckRequest, DcvCheckResponse, CaaCheckResponse
+from open_mpic_core import DcvDnsCheckResponseDetails, CaaCheckResponseDetails
+from open_mpic_core import CheckType
+from open_mpic_core import DcvValidationMethod
+from open_mpic_core import MpicEffectiveOrchestrationParameters
+from open_mpic_core import MpicCaaResponse
+from open_mpic_core import RemotePerspective
 
 from mpic_coordinator_service.main import MpicCoordinatorService, PerspectiveEndpoints, PerspectiveEndpointInfo, app
 from open_mpic_core_test.test_util.valid_mpic_request_creator import ValidMpicRequestCreator
@@ -72,7 +71,7 @@ class TestMpicCoordinatorService:
                 class_scoped_monkeypatch.setenv(k, v)
             yield class_scoped_monkeypatch
 
-    def constructor__should_instantiate_mpic_coordinator_with_configuration_including_target_perspectives(self, set_env_variables):
+    def constructor__should_configure_mpic_coordinator_with_env_including_target_perspectives(self, set_env_variables):
         mpic_coordinator_service = MpicCoordinatorService()
         all_possible_perspectives = TestMpicCoordinatorService.get_perspectives_by_code_dict_from_file()
         for target_perspective in mpic_coordinator_service.target_perspectives:
@@ -91,7 +90,9 @@ class TestMpicCoordinatorService:
         assert 'test-1' in perspectives
         assert 'test-7' in perspectives['test-8'].too_close_codes
 
-    async def call_remote_perspective__should_call_remote_perspective_with_provided_arguments_and_return_check_response(self, set_env_variables, mocker):
+    async def call_remote_perspective__should_call_remote_perspective_with_provided_arguments_and_return_check_response(
+            self, set_env_variables, mocker
+    ):
         service = MpicCoordinatorService()
         await service.initialize()
 
@@ -157,7 +158,7 @@ class TestMpicCoordinatorService:
 
         # Use AsyncMock for async function
         awaitable_result = AsyncMock(side_effect=Exception('Something went wrong'))
-        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=awaitable_result)
+        mocker.patch('open_mpic_core.MpicCoordinator.coordinate_mpic', new=awaitable_result)
 
         with TestClient(app) as client:
             response = client.post('/mpic', json=request.model_dump())
@@ -168,7 +169,7 @@ class TestMpicCoordinatorService:
         mock_response = TestMpicCoordinatorService.create_caa_mpic_response()
 
         awaitable_mock_response = AsyncMock(return_value=mock_response)
-        mocker.patch('open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.coordinate_mpic', new=awaitable_mock_response)
+        mocker.patch('open_mpic_core.MpicCoordinator.coordinate_mpic', new=awaitable_mock_response)
 
         with TestClient(app) as client:
             response = client.post('/mpic', json=request.model_dump())
@@ -196,8 +197,8 @@ class TestMpicCoordinatorService:
         mock_return = (mocked_perspective_responses, mocked_validity_per_perspective)
 
         mocker.patch(
-            'open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.issue_async_calls_and_collect_responses',
-            return_value=mock_return)
+            'open_mpic_core.MpicCoordinator.issue_async_calls_and_collect_responses', return_value=mock_return
+        )
 
         with TestClient(app) as client:
             response = client.post('/mpic', json=request.model_dump())
@@ -227,8 +228,10 @@ class TestMpicCoordinatorService:
     def create_perspectives_config_dict() -> dict[str, PerspectiveEndpoints]:
         # configure 6 target perspectives
         perspectives_as_dict = {
-            f"test-{i}": PerspectiveEndpoints(caa_endpoint_info=PerspectiveEndpointInfo(url=f"http://caa{i}.example.com/caa"),
-                                              dcv_endpoint_info=PerspectiveEndpointInfo(url=f"http://dcv{i}.example.com/dcv"))
+            f"test-{i}": PerspectiveEndpoints(
+                caa_endpoint_info=PerspectiveEndpointInfo(url=f"http://caa{i}.example.com/caa"),
+                dcv_endpoint_info=PerspectiveEndpointInfo(url=f"http://dcv{i}.example.com/dcv")
+            )
             for i in range(1, 7)  # 1-6
         }
         return perspectives_as_dict
