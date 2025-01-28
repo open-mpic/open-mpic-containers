@@ -6,9 +6,8 @@ from fastapi import status
 from fastapi.testclient import TestClient
 from unittest.mock import AsyncMock
 
-from open_mpic_core.common_domain.check_response import CaaCheckResponse
+from open_mpic_core import CaaCheckResponse, CaaCheckResponseDetails
 from open_mpic_core_test.test_util.mock_dns_object_creator import MockDnsObjectCreator
-from open_mpic_core.common_domain.check_response_details import CaaCheckResponseDetails
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
 
 from mpic_caa_checker_service.main import MpicCaaCheckerService, app
@@ -34,7 +33,7 @@ class TestMpicCaaCheckerService:
 
         # Use AsyncMock for async function
         awaitable_mock_response = AsyncMock(return_value=mock_caa_response)
-        mocker.patch('open_mpic_core.mpic_caa_checker.mpic_caa_checker.MpicCaaChecker.check_caa', new=awaitable_mock_response)
+        mocker.patch('open_mpic_core.MpicCaaChecker.check_caa', new=awaitable_mock_response)
 
         caa_check_request = ValidCheckCreator.create_valid_caa_check_request()
 
@@ -62,8 +61,7 @@ class TestMpicCaaCheckerService:
         mock_rrset = MockDnsObjectCreator.create_rrset(dns.rdatatype.CAA, *records)
         mock_domain = dns.name.from_text(caa_check_request.domain_or_ip_target)
         mock_return = (mock_rrset, mock_domain)
-        mocker.patch('open_mpic_core.mpic_caa_checker.mpic_caa_checker.MpicCaaChecker.find_caa_records_and_domain',
-                     return_value=mock_return)
+        mocker.patch('open_mpic_core.MpicCaaChecker.find_caa_records_and_domain', return_value=mock_return)
 
         with TestClient(app) as client:
             response = client.post('/caa', json=caa_check_request.model_dump())
