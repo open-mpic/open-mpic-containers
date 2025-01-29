@@ -7,15 +7,15 @@ from dotenv import load_dotenv
 from open_mpic_core import CaaCheckRequest, MpicCaaChecker, get_logger
 
 # 'config' directory should be a sibling of the directory containing this file
-config_path = Path(__file__).parent / 'config' / 'app.conf'
+config_path = Path(__file__).parent / "config" / "app.conf"
 load_dotenv(config_path)
 logger = get_logger(__name__)
 
 
 class MpicCaaCheckerService:
     def __init__(self):
-        self.perspective_code = os.environ['code']
-        self.default_caa_domain_list = os.environ['default_caa_domains'].split("|")
+        self.perspective_code = os.environ["code"]
+        self.default_caa_domain_list = os.environ["default_caa_domains"].split("|")
 
         # FIXME fail on perspective_code None or empty -- necessary for interpreting check results
         # FIXME warn on default_caa_domain_list None or empty
