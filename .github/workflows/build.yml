@@ -12,15 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: rickstaa/action-black@v1
+      - uses: psf/black@stable
         with:
-          black_args: "api-implementation/src/mpic_coordinator_service/* --check --line-length 120"
-      - uses: rickstaa/action-black@v1
-        with:
-          black_args: "api-implementation/src/mpic_caa_checker_service/* --check --line-length 120"
-      - uses: rickstaa/action-black@v1
-        with:
-          black_args: "api-implementation/src/mpic_dcv_checker_service/* --check --line-length 120"
+          options: "--check --verbose --line-length 120"
+          src: "api-implementation/src"
   Image-Build:
     runs-on: ubuntu-latest
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
