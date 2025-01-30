@@ -7,6 +7,15 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  Black-Format:
+    name: runner / black formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@stable
+        with:
+          options: "--check --verbose --line-length 120"
+          src: "api-implementation/src"
   Image-Build:
     runs-on: ubuntu-latest
     # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
