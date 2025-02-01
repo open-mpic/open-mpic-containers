@@ -82,10 +82,17 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
+      - name: Convert digest format
+        id: format-digest
+        run: |
+          DIGEST="${{ steps.push.outputs.digest }}"
+          FORMATTED_DIGEST=$(echo "$DIGEST" | sed 's/:/-/g')  # Replace : with -
+          echo "formatted_digest=$FORMATTED_DIGEST" >> $GITHUB_OUTPUT
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ steps.push.outputs.digest }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ steps.format-digest.outputs.formatted_digest }}
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
