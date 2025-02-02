@@ -27,12 +27,6 @@ class TestMpicDcvCheckerService:
                 class_scoped_monkeypatch.setenv(k, v)
             yield class_scoped_monkeypatch  # restore the environment afterward
 
-    def service__should_read_in_environment_configuration_through_config_file(self):
-        service = MpicDcvCheckerService()
-        # it'll read in the placeholder values in the config files -- that's acceptable for this particular test
-        # note: this test is semi-invalidated by other tests that check this value because it's a global load
-        assert service.perspective_code == "PERSPECTIVE_NAME_CODE_STRING"
-
     # noinspection PyMethodMayBeStatic
     def service__should_do_dcv_check_using_configured_dcv_checker(self, set_env_variables, mocker):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
@@ -96,14 +90,16 @@ class TestMpicDcvCheckerService:
 
     def service__should_set_log_level_of_dcv_checker(self, set_env_variables, mocker, setup_logging):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
-        mocker.patch('open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.perform_http_based_validation',
-                     return_value=TestMpicDcvCheckerService.create_dcv_check_response())
+        mocker.patch(
+            "open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.perform_http_based_validation",
+            return_value=TestMpicDcvCheckerService.create_dcv_check_response(),
+        )
         with TestClient(app) as client:
-            response = client.post('/dcv', json=dcv_check_request.model_dump())
+            response = client.post("/dcv", json=dcv_check_request.model_dump())
         assert response.status_code == status.HTTP_200_OK
         log_contents = setup_logging.getvalue()
         print(log_contents)
-        assert all(text in log_contents for text in ['MpicDcvChecker', 'TRACE'])  # Verify the log level was set
+        assert all(text in log_contents for text in ["MpicDcvChecker", "TRACE"])  # Verify the log level was set
 
     @staticmethod
     def create_dcv_check_response():
