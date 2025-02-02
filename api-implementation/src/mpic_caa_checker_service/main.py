@@ -9,16 +9,15 @@ from open_mpic_core.mpic_caa_checker.mpic_caa_checker import MpicCaaChecker
 from open_mpic_core.common_util.trace_level_logger import get_logger
 
 # 'config' directory should be a sibling of the directory containing this file
-config_path = Path(__file__).parent / 'config' / 'app.conf'
+config_path = Path(__file__).parent / "config" / "app.conf"
 load_dotenv(config_path)
 logger = get_logger(__name__)
 
 
 class MpicCaaCheckerService:
     def __init__(self):
-        self.perspective_code = os.environ['code']
-        self.default_caa_domain_list = os.environ['default_caa_domains'].split("|")
-        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code)
+        self.default_caa_domain_list = os.environ["default_caa_domains"].split("|")
+        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list)
 
     async def check_caa(self, caa_request: CaaCheckRequest):
         return await self.caa_checker.check_caa(caa_request)
