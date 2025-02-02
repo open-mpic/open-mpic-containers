@@ -2,7 +2,8 @@
 import logging
 from io import StringIO
 import pytest
-from open_mpic_core.common_util.trace_level_logger import TRACE_LEVEL
+from open_mpic_core import TRACE_LEVEL
+
 
 
 @pytest.fixture(autouse=True)
@@ -14,7 +15,8 @@ def setup_logging():
 
     log_output = StringIO()  # to be able to inspect what gets logged
     handler = logging.StreamHandler(log_output)
-    handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
+    handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s"))
+
 
     # Configure fresh logging
     logging.basicConfig(

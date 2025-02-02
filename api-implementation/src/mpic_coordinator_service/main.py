@@ -3,16 +3,18 @@ import json
 from contextlib import asynccontextmanager
 import traceback
 
+import tomllib
+import importlib.metadata
 import yaml
 import aiohttp
 
+from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, BaseModel, Field
-
 from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import MpicRequestValidationError
 from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import MpicRequestValidationMessages
 from open_mpic_core.common_domain.check_request import BaseCheckRequest
@@ -23,6 +25,13 @@ from open_mpic_core.common_domain.enum.check_type import CheckType
 from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
 from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
 from open_mpic_core.common_util.trace_level_logger import get_logger
+from open_mpic_core import MpicRequest, MpicResponse
+from open_mpic_core import MpicRequestValidationError, MpicRequestValidationMessages
+from open_mpic_core import CheckType
+from open_mpic_core import CheckRequest, CheckResponse
+from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
+from open_mpic_core import RemotePerspective
+from open_mpic_core import get_logger
 
 
 # 'config' directory should be a sibling of the directory containing this file
@@ -55,12 +64,7 @@ class MpicCoordinatorService:
             int(os.environ["absolute_max_attempts"]) if "absolute_max_attempts" in os.environ else None
         )
         self.hash_secret = os.environ["hash_secret"]
-
-        if "timeout_seconds" in os.environ:
-            self.timeout_seconds = float(os.environ["timeout_seconds"])
-        else:
-            # Default timeout seconds
-            self.timeout_seconds = 5
+        self.timeout_seconds = float(os.environ["timeout_seconds"]) if "timeout_seconds" in os.environ else 5
 
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {
@@ -98,7 +102,8 @@ class MpicCoordinatorService:
             session_timeout = aiohttp.ClientTimeout(
                 total=None, sock_connect=self.timeout_seconds, sock_read=self.timeout_seconds
             )
-            self._async_http_client = aiohttp.ClientSession(timeout=session_timeout)
+
+            self._async_http_client = aiohttp.ClientSession(timeout=session_timeout, trust_env=True)
 
     async def shutdown(self):
         if self._async_http_client:
@@ -138,7 +143,7 @@ class MpicCoordinatorService:
 
     # This function MUST validate its response and return a proper open_mpic_core object type.
     async def call_remote_perspective(
-        self, perspective: RemotePerspective, check_type: CheckType, check_request: BaseCheckRequest
+        self, perspective: RemotePerspective, check_type: CheckType, check_request: CheckRequest
     ) -> CheckResponse:
         if self._async_http_client is None:
             raise RuntimeError("Service not initialized - call initialize() first")
@@ -228,3 +233,20 @@ async def handle_mpic(request: MpicRequest):
 @app.get("/healthz")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/configz")
+async def get_config():
+    current = Path(__file__).parent
+    for _ in range(3):  # Try up to 3 levels up (Docker flattens the file structure a fair bit)
+        test_path = current / "pyproject.toml"
+        if test_path.exists():
+            with test_path.open(mode="rb") as file:
+                pyproject = tomllib.load(file)
+                return {
+                    "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
+                    "app_version": pyproject["project"]["version"],
+                    "mpic_core_version": importlib.metadata.version("open-mpic-core"),
+                }
+        current = current.parent
+    raise FileNotFoundError("Could not find pyproject.toml")

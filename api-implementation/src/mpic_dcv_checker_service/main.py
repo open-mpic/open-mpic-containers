@@ -5,11 +5,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
-
 from open_mpic_core.common_domain.check_request import DcvCheckRequest
 from open_mpic_core.mpic_dcv_checker.mpic_dcv_checker import MpicDcvChecker
 from open_mpic_core.common_util.trace_level_logger import get_logger
-
+from open_mpic_core import DcvCheckRequest
+from open_mpic_core import MpicDcvChecker
+from open_mpic_core import get_logger
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
@@ -20,10 +21,9 @@ logger = get_logger(__name__)
 class MpicDcvCheckerService:
     def __init__(self):
         self.verify_ssl = "verify_ssl" not in os.environ or os.environ["verify_ssl"] == "True"
-        self.dcv_checker = MpicDcvChecker(self.verify_ssl)
-
-    async def initialize(self):
-        await self.dcv_checker.initialize()
+        self.dcv_checker = MpicDcvChecker(
+          reuse_http_client=True, verify_ssl=self.verify_ssl
+        )
 
     async def shutdown(self):
         await self.dcv_checker.shutdown()
@@ -61,11 +61,7 @@ def get_service() -> MpicDcvCheckerService:
 async def lifespan(app_instance: FastAPI):
     # Initialize services
     service = get_service()
-    await service.initialize()
-
     yield
-
-    # Cleanup
     await service.shutdown()
 
 
