@@ -21,7 +21,6 @@ class MpicCaaCheckerService:
         self.default_caa_domain_list = os.environ["default_caa_domains"].split("|")
         self.caa_checker = MpicCaaChecker(self.default_caa_domain_list)
 
-
     async def check_caa(self, caa_request: CaaCheckRequest):
         return await self.caa_checker.check_caa(caa_request)
 

@@ -21,9 +21,7 @@ logger = get_logger(__name__)
 class MpicDcvCheckerService:
     def __init__(self):
         self.verify_ssl = "verify_ssl" not in os.environ or os.environ["verify_ssl"] == "True"
-        self.dcv_checker = MpicDcvChecker(
-          reuse_http_client=True, verify_ssl=self.verify_ssl
-        )
+        self.dcv_checker = MpicDcvChecker(reuse_http_client=True, verify_ssl=self.verify_ssl)
 
     async def shutdown(self):
         await self.dcv_checker.shutdown()
