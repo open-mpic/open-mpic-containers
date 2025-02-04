@@ -13,27 +13,15 @@ from fastapi.testclient import TestClient
 from multidict import CIMultiDictProxy, CIMultiDict
 from pydantic import TypeAdapter
 from requests import Response
-from open_mpic_core.common_domain.check_request import DcvCheckRequest
-from open_mpic_core.common_domain.check_response import (
-    DcvCheckResponse,
-    CaaCheckResponse,
-    CaaCheckResponseWithPerspectiveCode,
-    DcvCheckResponseWithPerspectiveCode,
-)
-from open_mpic_core.common_domain.check_response_details import DcvDnsCheckResponseDetails, CaaCheckResponseDetails
-from open_mpic_core.common_domain.enum.check_type import CheckType
-from open_mpic_core.common_domain.enum.dcv_validation_method import DcvValidationMethod
-from open_mpic_core.mpic_coordinator.domain.mpic_orchestration_parameters import MpicEffectiveOrchestrationParameters
-from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicCaaResponse
-from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
 from yarl import URL
 
-from open_mpic_core import DcvDnsCheckResponseDetails, CaaCheckResponseDetails
+from open_mpic_core import DcvCheckRequest, DcvCheckResponse
+from open_mpic_core import CaaCheckResponse, DcvDnsCheckResponseDetails, CaaCheckResponseDetails
 from open_mpic_core import CheckType
 from open_mpic_core import DcvValidationMethod
 from open_mpic_core import MpicEffectiveOrchestrationParameters
 from open_mpic_core import MpicCaaResponse
-from open_mpic_core import RemotePerspective
+from open_mpic_core import RemotePerspective, PerspectiveResponse
 
 from mpic_coordinator_service.main import MpicCoordinatorService, PerspectiveEndpoints, PerspectiveEndpointInfo, app
 from open_mpic_core_test.test_util.valid_mpic_request_creator import ValidMpicRequestCreator
@@ -102,7 +90,6 @@ class TestMpicCoordinatorService:
         assert "test-1" in perspectives
         assert "test-7" in perspectives["test-8"].too_close_codes
 
-    @pytest.mark.skip(reason="uses perspective name in response which is not longer sent")
     async def call_remote_perspective__should_call_remote_perspective_with_provided_arguments_and_return_check_response(
         self, set_env_variables, mocker
     ):
@@ -125,8 +112,8 @@ class TestMpicCoordinatorService:
                 RemotePerspective(code="test-1", rir="rir1"), CheckType.DCV, dcv_check_request
             )
             assert check_response.check_passed is True
-            # hijacking the value of 'perspective' to verify that the right arguments got passed to the call
-            assert check_response.perspective == dcv_check_request.domain_or_ip_target
+            # hijacking the value of 'details.found_at' to verify that the right arguments got passed to the call
+            assert check_response.details.found_at == dcv_check_request.domain_or_ip_target
         finally:
             await service.shutdown()
 
@@ -198,19 +185,16 @@ class TestMpicCoordinatorService:
         perspectives_codes = TestMpicCoordinatorService.create_perspectives_config_dict().keys()
         request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
         mocked_perspective_responses = [
-            CaaCheckResponseWithPerspectiveCode(
-                perspective=perspective_code,
-                check_passed=True,
-                details=CaaCheckResponseDetails(caa_record_present=False),
+            PerspectiveResponse(
+                perspective_code=perspective_code,
+                check_response=CaaCheckResponse(
+                    check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False)
+                ),
             )
             for perspective_code in perspectives_codes
         ]
-        mocked_validity_per_perspective = {
-            response.perspective: response.check_passed for response in mocked_perspective_responses
-        }
-        mock_return = (mocked_perspective_responses, mocked_validity_per_perspective)
-
-        mocker.patch("open_mpic_core.MpicCoordinator.issue_async_calls_and_collect_responses", return_value=mock_return)
+        mock_return = mocked_perspective_responses
+        mocker.patch("open_mpic_core.MpicCoordinator.call_checkers_and_collect_responses", return_value=mock_return)
 
         with TestClient(app) as client:
             response = client.post("/mpic", json=request.model_dump())
@@ -229,55 +213,6 @@ class TestMpicCoordinatorService:
             re.match(r"^\d+\.\d+\.\d+", config[key])
             for key in ["app_version", "open_mpic_api_spec_version", "mpic_core_version"]
         )
-
-    def service__should_set_log_level_of_mpic_coordinator(self, set_env_variables, mocker, setup_logging):
-        request = ValidMpicRequestCreator.create_valid_mpic_request(CheckType.CAA)
-        mocked_perspective_responses = [
-            CaaCheckResponseWithPerspectiveCode(
-                perspective="test-1", check_passed=True, details=CaaCheckResponseDetails(caa_record_present=False)
-            ),
-            CaaCheckResponseWithPerspectiveCode(
-                perspective="test-2",
-                check_passed=True,
-                details=CaaCheckResponseDetails(caa_record_present=False),
-            ),
-            CaaCheckResponseWithPerspectiveCode(
-                perspective="test-3",
-                check_passed=True,
-                details=CaaCheckResponseDetails(caa_record_present=False),
-            ),
-            CaaCheckResponseWithPerspectiveCode(
-                perspective="test-4",
-                check_passed=True,
-                details=CaaCheckResponseDetails(caa_record_present=False),
-            ),
-            CaaCheckResponseWithPerspectiveCode(
-                perspective="test-5",
-                check_passed=True,
-                details=CaaCheckResponseDetails(caa_record_present=False),
-            ),
-            CaaCheckResponseWithPerspectiveCode(
-                perspective="test-6",
-                check_passed=True,
-                details=CaaCheckResponseDetails(caa_record_present=False),
-            ),
-        ]
-        mocked_validity_per_perspective = {
-            response.perspective: response.check_passed for response in mocked_perspective_responses
-        }
-        mock_return = (mocked_perspective_responses, mocked_validity_per_perspective)
-
-        mocker.patch(
-            "open_mpic_core.mpic_coordinator.mpic_coordinator.MpicCoordinator.issue_async_calls_and_collect_responses",
-            return_value=mock_return,
-        )
-
-        with TestClient(app) as client:
-            response = client.post("/mpic", json=request.model_dump())
-        assert response.status_code == status.HTTP_200_OK
-        log_contents = setup_logging.getvalue()
-        print(log_contents)
-        assert all(text in log_contents for text in ["MpicCoordinator", "TRACE"])  # Verify the log level was set
 
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:
@@ -304,10 +239,12 @@ class TestMpicCoordinatorService:
         # json arg in requests.post() is a "json serializable object" (dict) rather than an actual json string
         check_request = DcvCheckRequest.model_validate(json)
         # hijacking the value of 'perspective_code' to verify that the right arguments got passed to the call
-        expected_response_body = DcvCheckResponseWithPerspectiveCode(
-            perspective=check_request.domain_or_ip_target,
+        expected_response_body = DcvCheckResponse(
             check_passed=True,
-            details=DcvDnsCheckResponseDetails(validation_method=DcvValidationMethod.ACME_DNS_01),
+            details=DcvDnsCheckResponseDetails(
+                validation_method=DcvValidationMethod.ACME_DNS_01,
+                found_at=check_request.domain_or_ip_target,
+            ),
         )
         expected_response = TestMpicCoordinatorService.create_mock_http_response(
             200, expected_response_body.model_dump_json()

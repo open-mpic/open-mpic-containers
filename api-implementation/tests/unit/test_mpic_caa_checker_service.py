@@ -67,25 +67,6 @@ class TestMpicCaaCheckerService:
         print(log_contents)
         assert all(text in log_contents for text in ["MpicCaaChecker", "TRACE"])  # Verify the log level was set
 
-    def service__should_set_log_level_of_caa_checker(self, setup_logging, mocker):  # TODO add logger_setup fixture
-        caa_check_request = ValidCheckCreator.create_valid_caa_check_request()
-
-        records = [MockDnsObjectCreator.create_caa_record(0, "issue", "ca1.org")]
-        mock_rrset = MockDnsObjectCreator.create_rrset(dns.rdatatype.CAA, *records)
-        mock_domain = dns.name.from_text(caa_check_request.domain_or_ip_target)
-        mock_return = (mock_rrset, mock_domain)
-        mocker.patch(
-            "open_mpic_core.mpic_caa_checker.mpic_caa_checker.MpicCaaChecker.find_caa_records_and_domain",
-            return_value=mock_return,
-        )
-
-        with TestClient(app) as client:
-            response = client.post("/caa", json=caa_check_request.model_dump())
-        assert response.status_code == status.HTTP_200_OK
-        log_contents = setup_logging.getvalue()
-        print(log_contents)
-        assert all(text in log_contents for text in ["MpicCaaChecker", "TRACE"])  # Verify the log level was set
-
     @staticmethod
     def create_caa_check_response():
         return CaaCheckResponse(

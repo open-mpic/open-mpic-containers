@@ -11,7 +11,7 @@ from open_mpic_core import DcvValidationMethod
 from open_mpic_core import MpicValidationError
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
 
-from mpic_dcv_checker_service.main import MpicDcvCheckerService, app
+from mpic_dcv_checker_service.main import app
 
 
 # noinspection PyMethodMayBeStatic
@@ -88,25 +88,11 @@ class TestMpicDcvCheckerService:
         print(log_contents)
         assert all(text in log_contents for text in ["MpicDcvChecker", "TRACE"])  # Verify the log level was set
 
-    def service__should_set_log_level_of_dcv_checker(self, set_env_variables, mocker, setup_logging):
-        dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
-        mocker.patch(
-            "open_mpic_core.mpic_dcv_checker.mpic_dcv_checker.MpicDcvChecker.perform_http_based_validation",
-            return_value=TestMpicDcvCheckerService.create_dcv_check_response(),
-        )
-        with TestClient(app) as client:
-            response = client.post("/dcv", json=dcv_check_request.model_dump())
-        assert response.status_code == status.HTTP_200_OK
-        log_contents = setup_logging.getvalue()
-        print(log_contents)
-        assert all(text in log_contents for text in ["MpicDcvChecker", "TRACE"])  # Verify the log level was set
-
     @staticmethod
     def create_dcv_check_response():
         return DcvCheckResponse(
-            perspective_code="us-east-1",
             check_passed=True,
-            details=DcvHttpCheckResponseDetails(validation_method=DcvValidationMethod.WEBSITE_CHANGE_V2),
+            details=DcvHttpCheckResponseDetails(validation_method=DcvValidationMethod.WEBSITE_CHANGE),
             timestamp_ns=time.time_ns(),
         )
 
