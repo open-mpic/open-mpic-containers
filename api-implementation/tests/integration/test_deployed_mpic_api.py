@@ -43,7 +43,7 @@ class TestDeployedMpicApi:
         print("\nRequest:\n", json.dumps(request.model_dump(), indent=4))  # pretty print request body
         response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
         # assert response body has a list of perspectives with length 2, and each element has response code 200
-        print("\nResponse:\n", json.dumps(response.text, indent=4))  # pretty print response body
+        print("\nResponse:\n", json.dumps(json.loads(response.text), indent=4))  # pretty print response body
         assert response.status_code == 200
         mpic_response: MpicCaaResponse = self.mpic_response_adapter.validate_json(response.text)
         perspectives: list[PerspectiveResponse] = mpic_response.perspectives
