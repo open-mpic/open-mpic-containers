@@ -1,6 +1,5 @@
 import os
 import json
-from contextlib import asynccontextmanager
 import traceback
 
 import tomllib
@@ -15,16 +14,6 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, BaseModel, Field
-from open_mpic_core.mpic_coordinator.domain.mpic_request_validation_error import MpicRequestValidationError
-from open_mpic_core.mpic_coordinator.messages.mpic_request_validation_messages import MpicRequestValidationMessages
-from open_mpic_core.common_domain.check_request import BaseCheckRequest
-from open_mpic_core.common_domain.check_response import CheckResponse
-from open_mpic_core.mpic_coordinator.domain.mpic_request import MpicRequest
-from open_mpic_core.mpic_coordinator.mpic_coordinator import MpicCoordinator, MpicCoordinatorConfiguration
-from open_mpic_core.common_domain.enum.check_type import CheckType
-from open_mpic_core.mpic_coordinator.domain.remote_perspective import RemotePerspective
-from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicResponse
-from open_mpic_core.common_util.trace_level_logger import get_logger
 from open_mpic_core import MpicRequest, MpicResponse
 from open_mpic_core import MpicRequestValidationError, MpicRequestValidationMessages
 from open_mpic_core import CheckType

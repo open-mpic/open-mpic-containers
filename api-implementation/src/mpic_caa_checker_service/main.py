@@ -4,9 +4,9 @@ from fastapi import FastAPI  # type: ignore
 from pathlib import Path
 from dotenv import load_dotenv
 
-from open_mpic_core.common_domain.check_request import CaaCheckRequest
-from open_mpic_core.mpic_caa_checker.mpic_caa_checker import MpicCaaChecker
-from open_mpic_core.common_util.trace_level_logger import get_logger
+from open_mpic_core import CaaCheckRequest
+from open_mpic_core import MpicCaaChecker
+from open_mpic_core import get_logger
 
 
 # 'config' directory should be a sibling of the directory containing this file

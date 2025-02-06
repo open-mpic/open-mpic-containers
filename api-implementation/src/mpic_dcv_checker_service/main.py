@@ -5,9 +5,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
-from open_mpic_core.common_domain.check_request import DcvCheckRequest
-from open_mpic_core.mpic_dcv_checker.mpic_dcv_checker import MpicDcvChecker
-from open_mpic_core.common_util.trace_level_logger import get_logger
 from open_mpic_core import DcvCheckRequest
 from open_mpic_core import MpicDcvChecker
 from open_mpic_core import get_logger
