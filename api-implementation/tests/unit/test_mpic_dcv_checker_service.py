@@ -16,19 +16,8 @@ from mpic_dcv_checker_service.main import app
 
 # noinspection PyMethodMayBeStatic
 class TestMpicDcvCheckerService:
-    @staticmethod
-    @pytest.fixture(scope="class")
-    def set_env_variables():
-        envvars = {
-            "AWS_REGION": "us-east-1",
-        }
-        with pytest.MonkeyPatch.context() as class_scoped_monkeypatch:
-            for k, v in envvars.items():
-                class_scoped_monkeypatch.setenv(k, v)
-            yield class_scoped_monkeypatch  # restore the environment afterward
-
     # noinspection PyMethodMayBeStatic
-    def service__should_do_dcv_check_using_configured_dcv_checker(self, set_env_variables, mocker):
+    def service__should_do_dcv_check_using_configured_dcv_checker(self, mocker):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
         mock_dcv_response = TestMpicDcvCheckerService.create_dcv_check_response()
 
@@ -53,7 +42,7 @@ class TestMpicDcvCheckerService:
     ])
     # fmt: on
     def service__should_return_appropriate_status_code_given_dcv_related_errors_in_response(
-        self, error_type: str, error_message: str, expected_status_code: int, set_env_variables, mocker
+        self, error_type: str, error_message: str, expected_status_code: int, mocker
     ):
         mock_dcv_response = TestMpicDcvCheckerService.create_dcv_check_response()
         mock_dcv_response.check_passed = False
@@ -77,7 +66,7 @@ class TestMpicDcvCheckerService:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {"status": "healthy"}
 
-    def service__should_set_log_level_of_dcv_checker(self, set_env_variables, mocker, setup_logging):
+    def service__should_set_log_level_of_dcv_checker(self, mocker, setup_logging):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
         check_response = TestMpicDcvCheckerService.create_dcv_check_response()
         mocker.patch("open_mpic_core.MpicDcvChecker.perform_http_based_validation", return_value=check_response)
