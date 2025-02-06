@@ -1,5 +1,7 @@
 import os
 import json
+import traceback
+
 import tomllib
 import importlib.metadata
 import yaml
@@ -12,7 +14,6 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, BaseModel, Field
-
 from open_mpic_core import MpicRequest, MpicResponse
 from open_mpic_core import MpicRequestValidationError, MpicRequestValidationMessages
 from open_mpic_core import CheckType
@@ -20,6 +21,7 @@ from open_mpic_core import CheckRequest, CheckResponse
 from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
 from open_mpic_core import RemotePerspective
 from open_mpic_core import get_logger
+
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
@@ -89,6 +91,7 @@ class MpicCoordinatorService:
             session_timeout = aiohttp.ClientTimeout(
                 total=None, sock_connect=self.timeout_seconds, sock_read=self.timeout_seconds
             )
+
             self._async_http_client = aiohttp.ClientSession(timeout=session_timeout, trust_env=True)
 
     async def shutdown(self):
@@ -205,7 +208,7 @@ async def exception_handling_middleware(request: Request, call_next):
     try:
         return await call_next(request)
     except Exception as e:
-        # Do some logging here
+        logger.error(traceback.format_exc())
         return JSONResponse(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content={"error": str(e)})
 
 

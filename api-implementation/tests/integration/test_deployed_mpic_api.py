@@ -3,10 +3,10 @@ import sys
 import pytest
 from pydantic import TypeAdapter
 
-from open_mpic_core import CaaCheckParameters, DcvWebsiteChangeValidationDetails, DcvCheckParameters
+from open_mpic_core import CaaCheckParameters, DcvWebsiteChangeValidationParameters, PerspectiveResponse
 from open_mpic_core import CertificateType
 from open_mpic_core import CheckType
-from open_mpic_core import MpicCaaRequest, MpicDcvRequest
+from open_mpic_core import MpicCaaRequest, MpicDcvRequest, MpicCaaResponse
 from open_mpic_core import MpicRequestOrchestrationParameters
 from open_mpic_core import MpicResponse, MpicRequestValidationMessages
 
@@ -43,15 +43,15 @@ class TestDeployedMpicApi:
         print("\nRequest:\n", json.dumps(request.model_dump(), indent=4))  # pretty print request body
         response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
         # assert response body has a list of perspectives with length 2, and each element has response code 200
-        print("\nResponse:\n", json.dumps(response.text, indent=4))  # pretty print response body
+        print("\nResponse:\n", json.dumps(json.loads(response.text), indent=4))  # pretty print response body
         assert response.status_code == 200
-        mpic_response = self.mpic_response_adapter.validate_json(response.text)
-        perspectives_list = mpic_response.perspectives
+        mpic_response: MpicCaaResponse = self.mpic_response_adapter.validate_json(response.text)
+        perspectives: list[PerspectiveResponse] = mpic_response.perspectives
         assert mpic_response.is_valid is True
         assert mpic_response.domain_or_ip_target == request.domain_or_ip_target
-        assert len(perspectives_list) == request.orchestration_parameters.perspective_count
+        assert len(perspectives) == request.orchestration_parameters.perspective_count
         assert (
-            len(list(filter(lambda perspective: perspective.check_type == CheckType.CAA, perspectives_list)))
+            len(list(filter(lambda perspective: perspective.check_response.check_type == CheckType.CAA, perspectives)))
             == request.orchestration_parameters.perspective_count
         )
 
@@ -59,9 +59,7 @@ class TestDeployedMpicApi:
     def api_should_return_200_and_failed_corroboration_given_failed_dcv_check(self, api_client):
         request = MpicDcvRequest(
             domain_or_ip_target="ifconfig.me",
-            dcv_check_parameters=DcvCheckParameters(
-                validation_details=DcvWebsiteChangeValidationDetails(http_token_path="/", challenge_value="test")
-            ),
+            dcv_check_parameters=DcvWebsiteChangeValidationParameters(http_token_path="/", challenge_value="test"),
         )
 
         print("\nRequest:\n", json.dumps(request.model_dump(), indent=4))  # pretty print request body

@@ -4,7 +4,10 @@ from fastapi import FastAPI  # type: ignore
 from pathlib import Path
 from dotenv import load_dotenv
 
-from open_mpic_core import CaaCheckRequest, MpicCaaChecker, get_logger
+from open_mpic_core import CaaCheckRequest
+from open_mpic_core import MpicCaaChecker
+from open_mpic_core import get_logger
+
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
@@ -14,13 +17,9 @@ logger = get_logger(__name__)
 
 class MpicCaaCheckerService:
     def __init__(self):
-        self.perspective_code = os.environ["code"]
-        self.default_caa_domain_list = os.environ["default_caa_domains"].split("|")
-
-        # FIXME fail on perspective_code None or empty -- necessary for interpreting check results
         # FIXME warn on default_caa_domain_list None or empty
-
-        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list, self.perspective_code)
+        self.default_caa_domain_list = os.environ["default_caa_domains"].split("|")
+        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list)
 
     async def check_caa(self, caa_request: CaaCheckRequest):
         return await self.caa_checker.check_caa(caa_request)

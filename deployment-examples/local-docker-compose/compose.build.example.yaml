@@ -106,19 +106,15 @@ services:
 configs:
   dcv_config_1:
     content: |
-      code="example-region-1"
       verify_ssl=False
   dcv_config_2:
     content: |
-      code="example-region-2"
       verify_ssl=False
   caa_config_1:
     content: |
-      code="example-region-1"
       default_caa_domains="example.com|example.org"
   caa_config_2:
     content: |
-      code="example-region-2"
       default_caa_domains="example.com|example.org"
   coordinator_config:
     content: |

@@ -5,7 +5,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
-
 from open_mpic_core import DcvCheckRequest
 from open_mpic_core import MpicDcvChecker
 from open_mpic_core import get_logger
@@ -18,11 +17,8 @@ logger = get_logger(__name__)
 
 class MpicDcvCheckerService:
     def __init__(self):
-        self.perspective_code = os.environ["code"]
         self.verify_ssl = "verify_ssl" not in os.environ or os.environ["verify_ssl"] == "True"
-        self.dcv_checker = MpicDcvChecker(
-            perspective_code=self.perspective_code, reuse_http_client=True, verify_ssl=self.verify_ssl
-        )
+        self.dcv_checker = MpicDcvChecker(reuse_http_client=True, verify_ssl=self.verify_ssl)
 
     async def shutdown(self):
         await self.dcv_checker.shutdown()
