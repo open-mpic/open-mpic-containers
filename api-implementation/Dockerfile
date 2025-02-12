@@ -6,6 +6,9 @@ ARG SERVICE_PATH
 
 RUN echo "building service from path: ${SERVICE_PATH}"
 
+# Dist/package upgrade
+RUN apt-get update && apt-get dist-upgrade -y
+
 # Install Hatch
 RUN pip install hatch
 
