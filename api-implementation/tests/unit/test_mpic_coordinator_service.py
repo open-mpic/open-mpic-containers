@@ -22,6 +22,7 @@ from open_mpic_core import DcvValidationMethod
 from open_mpic_core import MpicEffectiveOrchestrationParameters
 from open_mpic_core import MpicCaaResponse
 from open_mpic_core import RemotePerspective, PerspectiveResponse
+from open_mpic_core import MpicRequestProcessingException, MpicRequestValidationException
 
 from mpic_coordinator_service.main import MpicCoordinatorService, PerspectiveEndpoints, PerspectiveEndpointInfo, app
 from open_mpic_core_test.test_util.valid_mpic_request_creator import ValidMpicRequestCreator
@@ -149,6 +150,17 @@ class TestMpicCoordinatorService:
         assert response.status_code == 400
         result_body = json.loads(response.text)
         assert result_body["validation_issues"][0]["issue_type"] == "invalid-perspective-count"
+
+    def service__should_return_500_error_given_mpic_processing_exception(self, set_env_variables, mocker):
+        request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()
+
+        # Use AsyncMock for async function
+        awaitable_result = AsyncMock(side_effect=MpicRequestProcessingException("Perspectives are unavailable"))
+        mocker.patch("open_mpic_core.MpicCoordinator.coordinate_mpic", new=awaitable_result)
+
+        with TestClient(app) as client:
+            response = client.post("/mpic", json=request.model_dump())
+        assert response.status_code == 500
 
     def service__should_return_500_error_given_other_unexpected_errors(self, set_env_variables, mocker):
         request = ValidMpicRequestCreator.create_valid_dcv_mpic_request()

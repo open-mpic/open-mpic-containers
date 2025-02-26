@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, BaseModel, Field
 from open_mpic_core import MpicRequest, MpicResponse
-from open_mpic_core import MpicRequestValidationError, MpicRequestValidationMessages
+from open_mpic_core import MpicRequestValidationException, MpicRequestProcessingException, MpicRequestValidationMessages
 from open_mpic_core import CheckType
 from open_mpic_core import CheckRequest, CheckResponse
 from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
@@ -192,8 +192,8 @@ async def validation_exception_handler(request: Request, e: RequestValidationErr
 
 
 # noinspection PyUnusedLocal
-@app.exception_handler(MpicRequestValidationError)
-async def mpic_validation_exception_handler(request: Request, e: MpicRequestValidationError):
+@app.exception_handler(MpicRequestValidationException)
+async def mpic_validation_exception_handler(request: Request, e: MpicRequestValidationException):
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,  # If you want to use 400 instead of 422
         content={

@@ -92,9 +92,11 @@ configs:
   dcv_config_1:
     content: |
       verify_ssl=False
+      http_client_timeout=5
   dcv_config_2:
     content: |
       verify_ssl=False
+      http_client_timeout=5
   caa_config_1:
     content: |
       default_caa_domains="example.com|example.org"

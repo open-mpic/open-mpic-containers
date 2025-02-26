@@ -1,4 +1,6 @@
 import os
+import tomllib
+import importlib.metadata
 
 from fastapi import FastAPI  # type: ignore
 from pathlib import Path
@@ -52,3 +54,22 @@ async def handle_caa_check(request: CaaCheckRequest):
 @app.get("/healthz")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/configz")
+async def get_config():
+    current = Path(__file__).parent
+    for _ in range(3):  # Try up to 3 levels up (Docker flattens the file structure a fair bit)
+        test_path = current / "pyproject.toml"
+        if test_path.exists():
+            with test_path.open(mode="rb") as file:
+                pyproject = tomllib.load(file)
+                return {
+                    "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
+                    "app_version": pyproject["project"]["version"],
+                    "mpic_core_version": importlib.metadata.version("open-mpic-core"),
+                    "default_caa_domains": os.environ["default_caa_domains"],
+                }
+        current = current.parent
+    raise FileNotFoundError("Could not find pyproject.toml")
+
