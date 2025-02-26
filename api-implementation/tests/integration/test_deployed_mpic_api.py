@@ -1,6 +1,7 @@
 import json
 import sys
 import pytest
+import time
 from pydantic import TypeAdapter
 
 from open_mpic_core import CaaCheckParameters, DcvWebsiteChangeValidationParameters, PerspectiveResponse
@@ -33,6 +34,7 @@ class TestDeployedMpicApi:
 
     def api_should_return_200_and_passed_corroboration_given_successful_caa_check(self, api_client):
         request = MpicCaaRequest(
+            trace_identifier=f"test_trace_id_{time.time()}",  # unique trace id for each request
             domain_or_ip_target="example.com",
             orchestration_parameters=MpicRequestOrchestrationParameters(perspective_count=2, quorum_count=2),
             caa_check_parameters=CaaCheckParameters(
