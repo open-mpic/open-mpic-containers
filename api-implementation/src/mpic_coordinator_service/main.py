@@ -15,7 +15,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from pydantic import TypeAdapter, BaseModel, Field
 from open_mpic_core import MpicRequest, MpicResponse
-from open_mpic_core import MpicRequestValidationException, MpicRequestProcessingException, MpicRequestValidationMessages
+from open_mpic_core import MpicRequestValidationException, MpicRequestValidationMessages
 from open_mpic_core import CheckType
 from open_mpic_core import CheckRequest, CheckResponse
 from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
@@ -93,6 +93,7 @@ class MpicCoordinatorService:
             session_timeout = aiohttp.ClientTimeout(
                 total=None, sock_connect=self.http_client_timeout_seconds, sock_read=self.http_client_timeout_seconds
             )
+
 
             self._async_http_client = aiohttp.ClientSession(timeout=session_timeout, trust_env=True)
 
