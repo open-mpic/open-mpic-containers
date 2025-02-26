@@ -76,7 +76,7 @@ class TestMpicCaaCheckerService:
             re.match(r"^\d+\.\d+\.\d+", config[key])
             for key in ["app_version", "open_mpic_api_spec_version", "mpic_core_version"]
         )
-        assert config["default_caa_domains"] == "example.com|example.net"
+        assert config["default_caa_domains"] == ["example.com", "example.net"]
 
     @staticmethod
     def create_caa_check_response():

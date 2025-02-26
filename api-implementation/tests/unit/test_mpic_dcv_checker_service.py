@@ -1,7 +1,8 @@
 import time
-from unittest.mock import AsyncMock
-
+import re
 import pytest
+
+from unittest.mock import AsyncMock
 
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -76,6 +77,18 @@ class TestMpicDcvCheckerService:
         log_contents = setup_logging.getvalue()
         print(log_contents)
         assert all(text in log_contents for text in ["MpicDcvChecker", "TRACE"])  # Verify the log level was set
+
+    def service__should_return_app_config_diagnostics_give_diagnostics_request(self):
+        with TestClient(app) as client:
+            response = client.get("/configz")
+        assert response.status_code == status.HTTP_200_OK
+        config = response.json()
+        assert all(
+            re.match(r"^\d+\.\d+\.\d+", config[key])
+            for key in ["app_version", "open_mpic_api_spec_version", "mpic_core_version"]
+        )
+        assert config["http_client_timeout_seconds"] == 30
+        assert config["verify_ssl"] is True
 
     @staticmethod
     def create_dcv_check_response():

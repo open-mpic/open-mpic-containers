@@ -107,11 +107,11 @@ configs:
   dcv_config_1:
     content: |
       verify_ssl=False
-      http_client_timeout=30
+      http_client_timeout_seconds=30
   dcv_config_2:
     content: |
       verify_ssl=False
-      http_client_timeout=30
+      http_client_timeout_seconds=30
   caa_config_1:
     content: |
       default_caa_domains="example.com|example.org"
@@ -124,5 +124,6 @@ configs:
       default_perspective_count=2
       absolute_max_attempts=2
       hash_secret=hash_secret
+      http_client_timeout_seconds=5
   log_config:
     file: ./common_config/log_config.yaml

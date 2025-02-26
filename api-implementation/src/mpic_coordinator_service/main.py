@@ -53,7 +53,9 @@ class MpicCoordinatorService:
             int(os.environ["absolute_max_attempts"]) if "absolute_max_attempts" in os.environ else None
         )
         self.hash_secret = os.environ["hash_secret"]
-        self.timeout_seconds = float(os.environ["timeout_seconds"]) if "timeout_seconds" in os.environ else 5
+        self.http_client_timeout_seconds = (
+            float(os.environ["http_client_timeout_seconds"]) if "http_client_timeout_seconds" in os.environ else 5
+        )
 
         self.remotes_per_perspective_per_check_type = {
             CheckType.DCV: {
@@ -89,7 +91,7 @@ class MpicCoordinatorService:
     async def initialize(self):
         if self._async_http_client is None:
             session_timeout = aiohttp.ClientTimeout(
-                total=None, sock_connect=self.timeout_seconds, sock_read=self.timeout_seconds
+                total=None, sock_connect=self.http_client_timeout_seconds, sock_read=self.http_client_timeout_seconds
             )
 
             self._async_http_client = aiohttp.ClientSession(timeout=session_timeout, trust_env=True)
@@ -236,6 +238,9 @@ async def get_config():
                     "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
                     "app_version": pyproject["project"]["version"],
                     "mpic_core_version": importlib.metadata.version("open-mpic-core"),
+                    "absolute_max_attempts": get_service().global_max_attempts,
+                    "default_perspective_count": get_service().default_perspective_count,
+                    "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")

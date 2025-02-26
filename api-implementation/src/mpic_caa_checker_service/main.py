@@ -68,7 +68,7 @@ async def get_config():
                     "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
                     "app_version": pyproject["project"]["version"],
                     "mpic_core_version": importlib.metadata.version("open-mpic-core"),
-                    "default_caa_domains": os.environ["default_caa_domains"],
+                    "default_caa_domains": get_service().default_caa_domain_list,
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")
