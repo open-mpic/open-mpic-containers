@@ -72,4 +72,3 @@ async def get_config():
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")
-
