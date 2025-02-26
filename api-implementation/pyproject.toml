@@ -7,7 +7,7 @@ allow-direct-references = true
 
 [project]
 name = "open-mpic-restapi-server"
-version = "0.5.0"
+version = "0.5.1"
 description = 'MPIC standard API implementation leveraging FastAPI and Docker.'
 requires-python = ">=3.11"
 license = "MIT"
