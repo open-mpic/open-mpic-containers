@@ -94,8 +94,10 @@ class MpicCoordinatorService:
                 total=None, sock_connect=self.http_client_timeout_seconds, sock_read=self.http_client_timeout_seconds
             )
 
-
-            self._async_http_client = aiohttp.ClientSession(timeout=session_timeout, trust_env=True)
+            connector = aiohttp.TCPConnector(limit=0)  # no limit on simultaneous connections
+            self._async_http_client = aiohttp.ClientSession(
+                connector=connector, timeout=session_timeout, trust_env=True
+            )
 
     async def shutdown(self):
         if self._async_http_client:
