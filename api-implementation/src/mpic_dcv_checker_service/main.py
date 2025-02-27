@@ -1,6 +1,8 @@
 import os
-from contextlib import asynccontextmanager
+import tomllib
+import importlib.metadata
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, status
@@ -18,7 +20,14 @@ logger = get_logger(__name__)
 class MpicDcvCheckerService:
     def __init__(self):
         self.verify_ssl = "verify_ssl" not in os.environ or os.environ["verify_ssl"] == "True"
-        self.dcv_checker = MpicDcvChecker(reuse_http_client=True, verify_ssl=self.verify_ssl)
+        self.http_client_timeout_seconds = (
+            os.environ["http_client_timeout_seconds"]
+            if "http_client_timeout_seconds" in os.environ and float(os.environ["http_client_timeout_seconds"])
+            else 30
+        )
+        self.dcv_checker = MpicDcvChecker(
+            http_client_timeout=self.http_client_timeout_seconds, reuse_http_client=True, verify_ssl=self.verify_ssl
+        )
 
     async def shutdown(self):
         await self.dcv_checker.shutdown()
@@ -73,3 +82,22 @@ async def perform_mpic(request: DcvCheckRequest):
 @app.get("/healthz")
 async def health_check():
     return {"status": "healthy"}
+
+
+@app.get("/configz")
+async def get_config():
+    current = Path(__file__).parent
+    for _ in range(3):  # Try up to 3 levels up (Docker flattens the file structure a fair bit)
+        test_path = current / "pyproject.toml"
+        if test_path.exists():
+            with test_path.open(mode="rb") as file:
+                pyproject = tomllib.load(file)
+                return {
+                    "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
+                    "app_version": pyproject["project"]["version"],
+                    "mpic_core_version": importlib.metadata.version("open-mpic-core"),
+                    "verify_ssl": get_service().verify_ssl,
+                    "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
+                }
+        current = current.parent
+    raise FileNotFoundError("Could not find pyproject.toml")

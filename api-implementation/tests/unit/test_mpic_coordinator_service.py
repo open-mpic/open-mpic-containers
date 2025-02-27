@@ -48,7 +48,7 @@ class TestMpicCoordinatorService:
             "default_perspective_count": "2",
             "absolute_max_attempts": "2",
             "hash_secret": "test_secret",
-            "timeout_seconds": "15",
+            "http_client_timeout_seconds": "15",
         }
         with pytest.MonkeyPatch.context() as class_scoped_monkeypatch:
             for k, v in envvars.items():
@@ -81,7 +81,7 @@ class TestMpicCoordinatorService:
         assert mpic_coordinator_service.hash_secret == "test_secret"
         assert mpic_coordinator_service.default_perspective_count == 2
         assert mpic_coordinator_service.global_max_attempts == 2
-        assert mpic_coordinator_service.timeout_seconds == 15
+        assert mpic_coordinator_service.http_client_timeout_seconds == 15
 
     def load_available_perspectives_config__should_return_dict_of_perspectives_with_proximity_info_by_region_code(self):
         perspectives = MpicCoordinatorService.load_available_perspectives_config()
@@ -213,6 +213,9 @@ class TestMpicCoordinatorService:
             re.match(r"^\d+\.\d+\.\d+", config[key])
             for key in ["app_version", "open_mpic_api_spec_version", "mpic_core_version"]
         )
+        assert config["default_perspective_count"] == 2
+        assert config["absolute_max_attempts"] == 2
+        assert config["http_client_timeout_seconds"] == 15.0
 
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:
@@ -292,6 +295,7 @@ class TestMpicCoordinatorService:
                 perspective_count=3, quorum_count=2, attempt_count=1
             ),
             is_valid=True,
+            mpic_completed=True,
             perspectives=[],
             caa_check_parameters=caa_request.caa_check_parameters,
         )
