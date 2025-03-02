@@ -12,7 +12,6 @@ from open_mpic_core import (
 from open_mpic_core import CertificateType
 from open_mpic_core import MpicCaaRequest, MpicDcvRequest, MpicResponse
 from open_mpic_core import MpicRequestOrchestrationParameters
-from open_mpic_core import MpicCaaResponse, PerspectiveResponse
 
 import testing_api_client
 
