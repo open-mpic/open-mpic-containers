@@ -1,0 +1,13 @@
+# Default Uvicorn configuration
+
+# Network settings
+host: "0.0.0.0"
+port: 80
+
+# Server behavior
+workers: 1
+proxy_headers: true
+timeout_keep_alive: 60
+
+# Logging
+log_config: "/app/config/log_config.yaml"

@@ -25,7 +25,6 @@ from open_mpic_core import get_logger
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
-load_dotenv(config_path)
 logger = get_logger(__name__)
 
 
@@ -41,6 +40,8 @@ class PerspectiveEndpoints(BaseModel):
 
 class MpicCoordinatorService:
     def __init__(self):
+        load_dotenv(config_path)
+
         # load environment variables
         perspectives_json = os.environ["perspectives"]
         perspectives = {
@@ -55,6 +56,11 @@ class MpicCoordinatorService:
         self.hash_secret = os.environ["hash_secret"]
         self.http_client_timeout_seconds = (
             float(os.environ["http_client_timeout_seconds"]) if "http_client_timeout_seconds" in os.environ else 5
+        )
+        self.http_client_keepalive_timeout_seconds = (
+            float(os.environ["http_client_keepalive_timeout_seconds"])
+            if "http_client_keepalive_timeout_seconds" in os.environ
+            else 60
         )
 
         self.remotes_per_perspective_per_check_type = {
@@ -93,8 +99,7 @@ class MpicCoordinatorService:
             session_timeout = aiohttp.ClientTimeout(
                 total=None, sock_connect=self.http_client_timeout_seconds, sock_read=self.http_client_timeout_seconds
             )
-
-            connector = aiohttp.TCPConnector(limit=0)  # no limit on simultaneous connections
+            connector = aiohttp.TCPConnector(limit=0, keepalive_timeout=self.http_client_keepalive_timeout_seconds)
             self._async_http_client = aiohttp.ClientSession(
                 connector=connector, timeout=session_timeout, trust_env=True
             )

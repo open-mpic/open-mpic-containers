@@ -25,5 +25,19 @@ COPY ${SERVICE_PATH} .
 # This will install the Python version specified in pyproject.toml
 RUN hatch env create production
 
-# Run the service using uvicorn with the production environment
-CMD ["hatch", "env", "run", "-e", "production", "--", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers", "--log-config", "/app/config/log_config.yaml", "--timeout-keep-alive", "60"]
+# Install additional dependencies
+RUN hatch env run -e production -- pip install PyYAML
+
+# Create config directory
+RUN mkdir -p /app/config
+
+# Copy configuration files and scripts
+COPY uvicorn_config.yaml /app/config/
+COPY run_uvicorn.py /app/
+COPY docker-entrypoint.sh /app/
+
+# Make entrypoint script executable
+RUN chmod +x /app/docker-entrypoint.sh
+
+# Set the entrypoint script
+ENTRYPOINT ["/app/docker-entrypoint.sh"]

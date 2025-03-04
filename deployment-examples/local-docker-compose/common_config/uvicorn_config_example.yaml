@@ -1,0 +1,29 @@
+# Example Uvicorn configuration with explanations
+# Copy this file and adjust values according to your needs
+
+# Network settings
+# host: Interface to bind to
+# port: Port number for the service
+host: "0.0.0.0"
+port: 80
+
+# Server behavior
+# workers: Number of worker processes. Recommended: 2 × NUM_CORES + 1
+# reload: Enable auto-reload on code changes (development only)
+# proxy_headers: Enable processing of proxy headers
+# timeout_keep_alive: Timeout for keep-alive connections
+workers: 1
+# reload: false  # mutually exclusive with workers parameter
+proxy_headers: true
+timeout_keep_alive: 60
+
+# Logging
+# log_config: Path to the logging configuration file
+log_config: "/app/config/log_config.yaml"
+
+# Additional settings you might want to configure:
+# - ssl_keyfile: SSL key file path
+# - ssl_certfile: SSL certificate file path
+# - backlog: Maximum number of connections to hold in backlog
+# - limit_concurrency: Maximum number of concurrent connections
+# - limit_max_requests: Maximum number of requests to handle before restarting worker

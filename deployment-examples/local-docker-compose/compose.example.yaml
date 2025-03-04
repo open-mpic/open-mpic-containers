@@ -14,6 +14,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+      - source: uvicorn_config
+        target: /app/config/uvicorn_config.yaml
 
   dcv_checker_2:
     image: ghcr.io/open-mpic/dcv_checker:latest
@@ -28,6 +30,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+      - source: uvicorn_config
+        target: /app/config/uvicorn_config.yaml
 
   coordinator:
     image: ghcr.io/open-mpic/coordinator:latest
@@ -42,6 +46,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+      - source: uvicorn_config
+        target: /app/config/uvicorn_config.yaml
     volumes:
       - ./resources:/app/resources
 
@@ -58,6 +64,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+      - source: uvicorn_config
+        target: /app/config/uvicorn_config.yaml
 
   caa_checker_2:
     image: ghcr.io/open-mpic/caa_checker:latest
@@ -72,6 +80,8 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+      - source: uvicorn_config
+        target: /app/config/uvicorn_config.yaml
 
   traefik:
     image: traefik:v2.9
@@ -112,3 +122,5 @@ configs:
       http_client_timeout_seconds=5
   log_config:
     file: ./common_config/log_config.yaml
+  uvi_config:
+    file: ./common_config/uvicorn_config.yaml
