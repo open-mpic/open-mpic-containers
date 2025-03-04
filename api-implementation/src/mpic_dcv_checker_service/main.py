@@ -21,7 +21,7 @@ class MpicDcvCheckerService:
     def __init__(self):
         self.verify_ssl = "verify_ssl" not in os.environ or os.environ["verify_ssl"] == "True"
         self.http_client_timeout_seconds = (
-            os.environ["http_client_timeout_seconds"]
+            float(os.environ["http_client_timeout_seconds"])
             if "http_client_timeout_seconds" in os.environ and float(os.environ["http_client_timeout_seconds"])
             else 30
         )
