@@ -29,13 +29,13 @@ RUN chown -R _unbound:_unbound /opt/unbound /etc/unbound
 # Disable chroot for container environment (it's redundant in Docker)
 RUN sed -i 's|chroot: "/opt/unbound/etc/unbound"|chroot: ""|' /opt/unbound/etc/unbound/unbound.conf
 
+RUN mkdir -p /opt/unbound/etc/unbound/var && \
+    chown -R _unbound:_unbound /opt/unbound/etc/unbound/var
+
+RUN unbound-anchor -a "/opt/unbound/etc/unbound/var/root.key" || true # exit code from unbound-anchor is unreliable
+
 # Create a simple startup script
 RUN echo '#!/bin/sh\n\
-# Update DNSSEC root anchor if needed\n\
-unbound-anchor -a "/opt/unbound/etc/unbound/var/root.key" || echo "Root anchor update failed, continuing anyway"\n\
-# Create/ensure var directory exists\n\
-mkdir -p /opt/unbound/etc/unbound/var\n\
-chown -R _unbound:_unbound /opt/unbound/etc/unbound/var\n\
 # Start Unbound in foreground mode\n\
 exec /usr/sbin/unbound -d -c /opt/unbound/etc/unbound/unbound.conf\n\
 ' > /start.sh && \

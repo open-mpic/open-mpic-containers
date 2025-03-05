@@ -25,14 +25,31 @@ docker ps
 # Test basic DNS resolution
 dig @127.0.0.1 google.com
 
-# Check that DNSSEC is working
+# Test DNSSEC validation
 dig @127.0.0.1 +dnssec example.com
 
-# View the logs
-docker logs unbound-resolver
+# Force TCP protocol
+dig @127.0.0.1 +tcp cloudflare.com
 
-# Run a DNS lookup from inside the container
-docker exec unbound-resolver dig @127.0.0.1 cloudflare.com
+# Reverse DNS lookup
+dig @127.0.0.1 -x 8.8.8.8
+
+# Test from inside the container
+docker exec unbound-resolver dig @127.0.0.1 github.com
+```
+
+## Customizing Unbound Configuration
+
+```bash
+# Create a custom unbound.conf file
+mkdir -p configs
+# Edit your configuration in configs/unbound.conf
+
+# Run with your custom configuration mounted
+docker run -d --name unbound-resolver \
+  -p 53:53/udp -p 53:53/tcp \
+  -v $(pwd)/configs/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro \
+  unbound-dns
 ```
 
 ## Stopping and Cleaning Up
@@ -43,9 +60,6 @@ docker stop unbound-resolver
 
 # Remove the container
 docker rm unbound-resolver
-
-# Remove the image if needed
-docker rmi unbound-dns
 ```
 
 ## Troubleshooting
@@ -59,20 +73,4 @@ sudo lsof -i :53
 # On many Linux systems, you may need to disable systemd-resolved
 sudo systemctl stop systemd-resolved
 sudo systemctl disable systemd-resolved
-```
-
-## Custom Configuration
-
-To use a custom configuration file:
-
-```bash
-# Create a custom unbound.conf file
-mkdir -p configs
-# Edit your configuration in configs/unbound.conf
-
-# Run with your custom configuration mounted
-docker run -d --name unbound-resolver \
-  -p 53:53/udp -p 53:53/tcp \
-  -v $(pwd)/configs/unbound.conf:/etc/unbound/unbound.conf:ro \
-  unbound-dns
 ```
