@@ -28,6 +28,10 @@ def main():
     config.setdefault('log_config', '/app/config/log_config.yaml')
     config.setdefault('timeout_keep_alive', 60)
 
+    # Get a default number of workers based on cpu count
+    workers = (os.cpu_count() * 2 + 1) if os.cpu_count() else 1
+    config.setdefault('workers', workers)
+
     # Start uvicorn with the configured parameters
     uvicorn.run(
         "main:app",
@@ -36,7 +40,7 @@ def main():
         proxy_headers=config['proxy_headers'],
         log_config=config['log_config'],
         timeout_keep_alive=config['timeout_keep_alive'],
-        workers=config.get('workers', 1),
+        workers=config['workers'],
         reload=config.get('reload', False)
     )
 
