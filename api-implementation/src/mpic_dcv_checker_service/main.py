@@ -13,12 +13,12 @@ from open_mpic_core import get_logger
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
-load_dotenv(config_path)
 logger = get_logger(__name__)
 
 
 class MpicDcvCheckerService:
     def __init__(self):
+        load_dotenv(config_path)
         self.verify_ssl = "verify_ssl" not in os.environ or os.environ["verify_ssl"] == "True"
         self.http_client_timeout_seconds = (
             float(os.environ["http_client_timeout_seconds"])

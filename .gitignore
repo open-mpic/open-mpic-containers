@@ -1,6 +1,7 @@
 # Files that should have .examples. in the repository but are otherwise deployment specific configuration
 deployment-examples/local-docker-compose/resources/available_perspectives.yaml
 deployment-examples/local-docker-compose/common_config/log_config.yaml
+deployment-examples/local-docker-compose/common_config/uvicorn_config.yaml
 deployment-examples/local-docker-compose/compose.yaml
 deployment-examples/amazon-ec2/config.yaml
 deployment-examples/*/*generated.tf
