@@ -31,6 +31,7 @@ dependencies = [
     "dnspython==2.6.1",
     "pydantic==2.8.2",
     "fastapi[standard]>=0.115.0,<0.116.0",
+    "starlette==0.45.3",
 #    "open-mpic-core @ git+https://github.com/open-mpic/open-mpic-core-python.git@ds-more-error-handling",
     "open-mpic-core==5.4.0",
     "aiohttp==3.11.11",

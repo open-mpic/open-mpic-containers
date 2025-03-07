@@ -9,6 +9,7 @@ server:
     # often, and not trust (very large) TTL values.
     #cache-max-ttl: 86400
     cache-max-ttl: 1
+
     # Time to live minimum for RRsets and messages in the cache. If the minimum
     # kicks in, the data is cached for longer than the domain owner intended,
     # and thus less queries are made to look up the data. Zero makes sure the
@@ -17,6 +18,7 @@ server:
     # the cache does not match up with the actual data any more.
     #cache-min-ttl: 300
     cache-min-ttl: 1
+
     # Set the working directory for the program.
     directory: "/opt/unbound/etc/unbound"
 
@@ -63,7 +65,7 @@ server:
     log-local-actions: no
 
     # Do not print one line per query to the log
-    log-queries: yes
+    log-queries: no
 
     # Do not print one line per reply to the log
     log-replies: no
@@ -83,7 +85,7 @@ server:
     # Level 3: Gives query level information, output per query.
     # Level 4:  Gives algorithm level information.
     # Level 5: Logs client identification for cache misses.
-    verbosity: 3
+    verbosity: 0
 
     ###########################################################################
     # PRIVACY SETTINGS
