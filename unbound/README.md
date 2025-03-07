@@ -1,0 +1,76 @@
+# Unbound DNS Resolver Docker Image
+
+A lightweight Docker container running Unbound DNS resolver based on Ubuntu.
+
+## Building the Docker Image
+
+```bash
+# Build the Docker image
+docker build -t unbound-dns .
+```
+
+## Running the Container
+
+```bash
+# Run the container in the background
+docker run -d --name unbound-resolver -p 53:53/udp -p 53:53/tcp unbound-dns
+
+# Check if the container is running
+docker ps
+```
+
+## Testing the DNS Resolver
+
+```bash
+# Test basic DNS resolution
+dig @127.0.0.1 google.com
+
+# Test DNSSEC validation
+dig @127.0.0.1 +dnssec example.com
+
+# Force TCP protocol
+dig @127.0.0.1 +tcp cloudflare.com
+
+# Reverse DNS lookup
+dig @127.0.0.1 -x 8.8.8.8
+
+# Test from inside the container
+docker exec unbound-resolver dig @127.0.0.1 github.com
+```
+
+## Customizing Unbound Configuration
+
+```bash
+# Create a custom unbound.conf file
+mkdir -p configs
+# Edit your configuration in configs/unbound.conf
+
+# Run with your custom configuration mounted
+docker run -d --name unbound-resolver \
+  -p 53:53/udp -p 53:53/tcp \
+  -v $(pwd)/configs/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro \
+  unbound-dns
+```
+
+## Stopping and Cleaning Up
+
+```bash
+# Stop the container
+docker stop unbound-resolver
+
+# Remove the container
+docker rm unbound-resolver
+```
+
+## Troubleshooting
+
+If you encounter issues with port 53 being already in use on your host:
+
+```bash
+# Check what's using port 53 on your host
+sudo lsof -i :53
+
+# On many Linux systems, you may need to disable systemd-resolved
+sudo systemctl stop systemd-resolved
+sudo systemctl disable systemd-resolved
+```
