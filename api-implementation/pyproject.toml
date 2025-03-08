@@ -26,15 +26,15 @@ classifiers = [
   "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
-    "pyyaml==6.0.1",
+    "pyyaml==6.0.2",
     "requests>=2.32.3",
-    "dnspython==2.6.1",
-    "pydantic==2.8.2",
+    "dnspython==2.7.0",
+    "pydantic==2.10.6",
     "fastapi[standard]>=0.115.0,<0.116.0",
     "starlette==0.45.3",
 #    "open-mpic-core @ git+https://github.com/open-mpic/open-mpic-core-python.git@ds-more-error-handling",
     "open-mpic-core==5.4.1",
-    "aiohttp==3.11.11",
+    "aiohttp==3.11.13",
     "uvicorn>=0.22.0,<0.23.0",
     "black==24.8.0",
 ]
