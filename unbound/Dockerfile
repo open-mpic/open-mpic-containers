@@ -13,6 +13,10 @@ RUN apt-get update && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+
+# Dist/package upgrade
+RUN apt-get update && apt-get dist-upgrade -y
+
 # Create the _unbound user
 RUN useradd -r -s /usr/sbin/nologin -d /var/lib/unbound -M _unbound
 
@@ -36,10 +40,10 @@ RUN unbound-anchor -a "/opt/unbound/etc/unbound/var/root.key" || true # exit cod
 
 # Create a simple startup script
 RUN echo '#!/bin/sh\n\
-# Start Unbound in foreground mode\n\
-exec /usr/sbin/unbound -d -c /opt/unbound/etc/unbound/unbound.conf\n\
-' > /start.sh && \
-chmod +x /start.sh
+    # Start Unbound in foreground mode\n\
+    exec /usr/sbin/unbound -d -c /opt/unbound/etc/unbound/unbound.conf\n\
+    ' > /start.sh && \
+    chmod +x /start.sh
 
 # Expose DNS ports
 EXPOSE 53/tcp 53/udp

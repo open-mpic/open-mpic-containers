@@ -19,6 +19,9 @@ server:
     #cache-min-ttl: 300
     cache-min-ttl: 1
 
+    # Reduce the infra host cache TTL to mitigate nameserver forcing attacks.
+    infra-host-ttl: 1
+
     # Set the working directory for the program.
     directory: "/opt/unbound/etc/unbound"
 
@@ -76,7 +79,7 @@ server:
     # If you want to log to a file, use:
     # logfile: /opt/unbound/etc/unbound/unbound.log
     # Set log location (using /dev/null further limits logging)
-    logfile: ""
+    logfile: /dev/null
 
     # Set logging level
     # Level 0: No verbosity, only errors.
