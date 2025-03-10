@@ -155,5 +155,5 @@ configs:
       http_client_timeout_seconds=5
   log_config:
     file: ./common_config/log_config.yaml
-  uvi_config:
+  uvicorn_config:
     file: ./common_config/uvicorn_config.yaml
