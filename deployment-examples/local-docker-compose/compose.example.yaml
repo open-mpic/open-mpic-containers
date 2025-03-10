@@ -96,6 +96,8 @@ services:
   unbound:
     image: ghcr.io/open-mpic/unbound:latest
     restart: unless-stopped
+    #volumes:
+    #  - ./unbound_config/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro
     networks:
       default:
         ipv4_address: 172.28.0.2 # static IP address within acceptable range
