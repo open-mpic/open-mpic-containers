@@ -44,11 +44,13 @@ def get_service() -> MpicCaaCheckerService:
 app = FastAPI()
 
 
+# noinspection PyUnresolvedReferences
 @app.post("/caa")
 async def handle_caa_check(request: CaaCheckRequest):
-    # noinspection PyUnresolvedReferences
     async with logger.trace_timing("Remote CAA check processing"):
-        return await get_service().check_caa(request)
+        result = await get_service().check_caa(request)
+        logger.trace(f"CAA check result: {result}")
+        return result
 
 
 @app.get("/healthz")

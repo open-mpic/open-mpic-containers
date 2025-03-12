@@ -46,6 +46,7 @@ test = [
     "pytest-mock==3.14.0",
     "pytest-html==4.1.1",
     "pytest-asyncio==0.25.1",
+    "locust==2.33.1",
 ]
 
 [project.urls]
@@ -86,6 +87,7 @@ unit = "pytest"
 unit-html = "pytest --html=testreports/index.html" # generate html report (warning: uses an aging plugin, 11-2023)
 integration = "pytest tests/integration"
 coverage = "pytest --cov=src --cov-report=term-missing --cov-report=html"
+load = "locust -f tests/load/local_docker_compose_locustfile.py"
 
 [tool.hatch.envs.hatch-test]
 default-args = ["tests/unit"]
