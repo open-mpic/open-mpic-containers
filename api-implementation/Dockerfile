@@ -9,6 +9,17 @@ RUN echo "building service from path: ${SERVICE_PATH}"
 # Dist/package upgrade
 RUN apt-get update && apt-get dist-upgrade -y
 
+# Install various diagnostic tooling
+RUN apt-get install -y \
+    dnsutils \
+    net-tools \
+    tcpdump \
+    iputils-ping \
+    curl \
+    nano \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
 # Install Hatch
 RUN pip install hatch
 

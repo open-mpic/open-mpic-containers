@@ -98,6 +98,7 @@ async def get_config():
                     "mpic_core_version": importlib.metadata.version("open-mpic-core"),
                     "verify_ssl": get_service().verify_ssl,
                     "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
+                    "log_level": logger.getEffectiveLevel(),
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")

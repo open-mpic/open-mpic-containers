@@ -17,8 +17,6 @@ from mpic_dcv_checker_service.main import app
 
 # noinspection PyMethodMayBeStatic
 class TestMpicDcvCheckerService:
-
-
     # noinspection PyMethodMayBeStatic
     def service__should_do_dcv_check_using_configured_dcv_checker(self, mocker):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
@@ -91,6 +89,7 @@ class TestMpicDcvCheckerService:
         )
         assert config["http_client_timeout_seconds"] == 35  # default in app.conf file
         assert config["verify_ssl"] is True
+        assert config["log_level"] == 5
 
     @staticmethod
     def create_dcv_check_response():

@@ -87,7 +87,9 @@ unit = "pytest"
 unit-html = "pytest --html=testreports/index.html" # generate html report (warning: uses an aging plugin, 11-2023)
 integration = "pytest tests/integration"
 coverage = "pytest --cov=src --cov-report=term-missing --cov-report=html"
-load = "locust -f tests/load/local_docker_compose_locustfile.py"
+# defaults to http://localhost:8000/mpic-coordinator, change host by adding "-h <hostname>" to the command
+# example: hatch run test:load -h http://my-mpic-coordinator/
+load = "locust -f tests/load/locustfile.py {args}"
 
 [tool.hatch.envs.hatch-test]
 default-args = ["tests/unit"]

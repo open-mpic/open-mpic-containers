@@ -1,19 +1,23 @@
 import time
 import datetime
 import random
-from importlib import resources
-from pathlib import Path
 
-from locust import HttpUser, task, events, tag, FastHttpUser, run_single_user, between
+from pathlib import Path
+from pydantic import TypeAdapter
+from locust import HttpUser, task, events, tag, FastHttpUser, run_single_user, between, constant
 # from locust.runners import MasterRunner
+
 from open_mpic_core import (
+    MpicResponse,
     MpicCaaRequest,
     MpicRequestOrchestrationParameters,
     CaaCheckParameters,
     CertificateType,
+    MpicCaaResponse,
 )
 
 test_domain_list: list[str] = []
+mpic_response_adapter = TypeAdapter(MpicResponse)
 
 
 def timestring() -> str:
@@ -22,7 +26,7 @@ def timestring() -> str:
 
 
 class LocalDockerComposeUser(HttpUser):
-    wait_time = between(1, 2)  # wait between 1 and 2 seconds after each task, for now
+    wait_time = constant(0)  # between(1, 2)  # wait between 1 and 2 seconds after each task, for now
     host = "http://localhost:8000/mpic-coordinator"
     network_timeout = 10
 
@@ -47,7 +51,16 @@ class LocalDockerComposeUser(HttpUser):
 
         print(f"request: {data}")
 
-        self.client.post("/mpic", headers=headers, data=data)  # , name="/caa")
+        with self.client.post("/mpic", headers=headers, data=data, catch_response=True) as response:
+            if response.status_code != 200:
+                response.failure(f"Unexpected response code: {response.status_code}")
+            else:
+                mpic_response: MpicCaaResponse = mpic_response_adapter.validate_json(response.text)
+                print(f"{timestring()} response: {response.text}")
+                if mpic_response.mpic_completed is False:
+                    response.failure("MPIC did not complete successfully")
+                else:
+                    response.success()
 
 
 @events.test_start.add_listener
@@ -58,8 +71,6 @@ def on_locust_init(environment, **_kwargs):
     # read in the test domain list file that's in the same directory as this file, each line is a domain
     resource_path = Path(__file__).parent.parent / "resources" / "target_domains.txt"
     with resource_path.open() as file:
-    # with open("../resources/target_domains.txt") as file:
-        # strip newlines off each line, and store in test_domain_list
         test_domain_list = [line.strip() for line in file]
 
 

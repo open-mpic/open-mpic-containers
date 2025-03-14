@@ -48,6 +48,7 @@ app = FastAPI()
 @app.post("/caa")
 async def handle_caa_check(request: CaaCheckRequest):
     async with logger.trace_timing("Remote CAA check processing"):
+        print("Logger level:", logger.level)
         result = await get_service().check_caa(request)
         logger.trace(f"CAA check result: {result}")
         return result
@@ -71,6 +72,7 @@ async def get_config():
                     "app_version": pyproject["project"]["version"],
                     "mpic_core_version": importlib.metadata.version("open-mpic-core"),
                     "default_caa_domains": get_service().default_caa_domain_list,
+                    "log_level": logger.getEffectiveLevel(),
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")

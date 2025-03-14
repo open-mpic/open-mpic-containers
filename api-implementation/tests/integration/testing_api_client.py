@@ -12,7 +12,8 @@ class TestingApiClient:
 
     def post(self, url_suffix, data):
         headers = {
-            "content-type": "application/json",
+            "Content-type": "application/json",
+            "Connection": "keep-alive",
         }
         response = self._session.post(self.service_base_url + "/" + url_suffix, headers=headers, data=data)
         return response

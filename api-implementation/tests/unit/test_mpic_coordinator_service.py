@@ -216,6 +216,7 @@ class TestMpicCoordinatorService:
         assert config["default_perspective_count"] == 2
         assert config["absolute_max_attempts"] == 2
         assert config["http_client_timeout_seconds"] == 15.0
+        assert config["log_level"] == 5
 
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:
