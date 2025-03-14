@@ -7,7 +7,7 @@ allow-direct-references = true
 
 [project]
 name = "open-mpic-restapi-server"
-version = "0.5.2"
+version = "1.0.0"
 description = 'MPIC standard API implementation leveraging FastAPI and Docker.'
 requires-python = ">=3.11"
 license = "MIT"
@@ -33,7 +33,7 @@ dependencies = [
     "fastapi[standard]>=0.115.0,<0.116.0",
     "starlette==0.45.3",
 #    "open-mpic-core @ git+https://github.com/open-mpic/open-mpic-core-python.git@ds-more-error-handling",
-    "open-mpic-core==5.4.1",
+    "open-mpic-core==5.5.1",
     "aiohttp==3.11.13",
     "uvicorn>=0.22.0,<0.23.0",
     "black==24.8.0",
