@@ -149,28 +149,28 @@ server:
 
     # Harden against algorithm downgrade when multiple algorithms are
     # advertised in the DS record.
-    harden-algo-downgrade: no
+    harden-algo-downgrade: yes
 
     # Harden against unknown records in the authority section and additional
     # section. If no, such records are copied from the upstream and presented
     # to the client together with the answer. If yes, it could hamper future
     # protocol developments that want to add records.
-    harden-unknown-additional: no
+    harden-unknown-additional: yes
 
     # RFC 8020. returns nxdomain to queries for a name below another name that
     # is already known to be nxdomain.
-    harden-below-nxdomain: no
+    harden-below-nxdomain: yes
 
     # Require DNSSEC data for trust-anchored zones, if such data is absent, the
     # zone becomes bogus. If turned off you run the risk of a downgrade attack
     # that disables security for a zone.
-    harden-dnssec-stripped: no
+    harden-dnssec-stripped: yes
 
     # Only trust glue if it is within the servers authority.
     harden-glue: yes
 
     # Ignore very large queries.
-    harden-large-queries: no
+    harden-large-queries: yes
 
     # Perform additional queries for infrastructure data to harden the referral
     # path. Validates the replies if trust anchors are configured and the zones
@@ -180,7 +180,7 @@ server:
     harden-referral-path: no
 
     # Ignore very small EDNS buffer sizes from queries.
-    harden-short-bufsize: no
+    harden-short-bufsize: yes
 
     # If enabled the HTTP header User-Agent is not set. Use with caution
     # as some webserver configurations may reject HTTP requests lacking
