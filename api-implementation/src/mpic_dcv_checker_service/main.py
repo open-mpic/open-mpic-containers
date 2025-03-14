@@ -72,11 +72,13 @@ async def lifespan(app_instance: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+# noinspection PyUnresolvedReferences
 @app.post("/dcv")
 async def perform_mpic(request: DcvCheckRequest):
-    # noinspection PyUnresolvedReferences
     async with logger.trace_timing("Remote DCV check processing"):
-        return await get_service().check_dcv(request)
+        result = await get_service().check_dcv(request)
+        logger.trace(f"DCV check result: {result}")
+        return result
 
 
 @app.get("/healthz")

@@ -48,7 +48,6 @@ app = FastAPI()
 @app.post("/caa")
 async def handle_caa_check(request: CaaCheckRequest):
     async with logger.trace_timing("Remote CAA check processing"):
-        print("Logger level:", logger.level)
         result = await get_service().check_caa(request)
         logger.trace(f"CAA check result: {result}")
         return result
