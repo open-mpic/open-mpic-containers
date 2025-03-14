@@ -51,7 +51,7 @@ class TestMpicCaaCheckerService:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {"status": "healthy"}
 
-    def service__should_set_log_level_of_caa_checker(self, setup_logging, mocker):  # TODO add logger_setup fixture
+    def service__should_set_log_level_of_caa_checker(self, setup_logging, mocker):
         caa_check_request = ValidCheckCreator.create_valid_caa_check_request()
 
         records = [MockDnsObjectCreator.create_caa_record(0, "issue", "ca1.org")]
@@ -77,6 +77,7 @@ class TestMpicCaaCheckerService:
             for key in ["app_version", "open_mpic_api_spec_version", "mpic_core_version"]
         )
         assert config["default_caa_domains"] == ["example.com", "example.net"]
+        assert config["log_level"] == 5
 
     @staticmethod
     def create_caa_check_response():
