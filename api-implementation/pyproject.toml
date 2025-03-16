@@ -7,7 +7,7 @@ allow-direct-references = true
 
 [project]
 name = "open-mpic-restapi-server"
-version = "1.0.0"
+version = "1.0.1"
 description = 'MPIC standard API implementation leveraging FastAPI and Docker.'
 requires-python = ">=3.11"
 license = "MIT"
@@ -46,6 +46,7 @@ test = [
     "pytest-mock==3.14.0",
     "pytest-html==4.1.1",
     "pytest-asyncio==0.25.1",
+    "locust==2.33.1",
 ]
 
 [project.urls]
@@ -86,6 +87,9 @@ unit = "pytest"
 unit-html = "pytest --html=testreports/index.html" # generate html report (warning: uses an aging plugin, 11-2023)
 integration = "pytest tests/integration"
 coverage = "pytest --cov=src --cov-report=term-missing --cov-report=html"
+# defaults to http://localhost:8000/mpic-coordinator, change host by adding "-h <hostname>" to the command
+# example: hatch run test:load -h http://my-mpic-coordinator/
+load = "locust -f tests/load/locustfile.py {args}"
 
 [tool.hatch.envs.hatch-test]
 default-args = ["tests/unit"]

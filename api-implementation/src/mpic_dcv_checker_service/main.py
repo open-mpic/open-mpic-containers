@@ -72,11 +72,13 @@ async def lifespan(app_instance: FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 
+# noinspection PyUnresolvedReferences
 @app.post("/dcv")
 async def perform_mpic(request: DcvCheckRequest):
-    # noinspection PyUnresolvedReferences
     async with logger.trace_timing("Remote DCV check processing"):
-        return await get_service().check_dcv(request)
+        result = await get_service().check_dcv(request)
+        logger.trace(f"DCV check result: {result}")
+        return result
 
 
 @app.get("/healthz")
@@ -98,6 +100,7 @@ async def get_config():
                     "mpic_core_version": importlib.metadata.version("open-mpic-core"),
                     "verify_ssl": get_service().verify_ssl,
                     "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
+                    "log_level": logger.getEffectiveLevel(),
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")

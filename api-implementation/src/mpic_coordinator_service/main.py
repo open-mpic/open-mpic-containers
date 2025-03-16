@@ -249,6 +249,7 @@ async def get_config():
                     "absolute_max_attempts": get_service().global_max_attempts,
                     "default_perspective_count": get_service().default_perspective_count,
                     "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
+                    "log_level": logger.getEffectiveLevel(),
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")

@@ -9,6 +9,7 @@ from open_mpic_core import TRACE_LEVEL
 @pytest.fixture(autouse=True)
 def clear_env_vars():
     """Clear environment variables before each test to prevent cross-test contamination."""
+    print("Applying clear_env_vars fixture")
     # Store original environment
     original_env = dict(os.environ)
 
@@ -25,6 +26,7 @@ def clear_env_vars():
 
 @pytest.fixture(autouse=True)
 def setup_logging():
+    print("Applying setup_logging fixture")
     # Clear existing handlers
     root = logging.getLogger()
     for handler in root.handlers[:]:
@@ -41,3 +43,8 @@ def setup_logging():
     )
 
     yield log_output
+
+
+@pytest.mark.usefixtures("clear_env_vars", "setup_logging")
+def pytest_runtest_setup(item):
+    pass
