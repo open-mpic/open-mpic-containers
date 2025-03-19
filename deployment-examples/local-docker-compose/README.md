@@ -57,11 +57,8 @@ curl -H 'Content-Type: application/json' \
   "check_type": "dcv",
   "domain_or_ip_target": "dns-01.integration-testing.open-mpic.org",
   "dcv_check_parameters": {
-
-  "validation_details": {
     "validation_method": "acme-dns-01",
-    "key_authorization": "7FwkJPsKf-TH54wu4eiIFA3nhzYaevsL7953ihy-tpo"
-    }
+    "key_authorization_hash": "7FwkJPsKf-TH54wu4eiIFA3nhzYaevsL7953ihy-tpo"
   }
 }' \
       -X POST \
