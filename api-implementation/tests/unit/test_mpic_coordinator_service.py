@@ -49,6 +49,7 @@ class TestMpicCoordinatorService:
             "absolute_max_attempts": "2",
             "hash_secret": "test_secret",
             "http_client_timeout_seconds": "15",
+            "uvicorn_server_timeout_keep_alive": "25",
         }
         with pytest.MonkeyPatch.context() as class_scoped_monkeypatch:
             for k, v in envvars.items():
@@ -216,7 +217,9 @@ class TestMpicCoordinatorService:
         assert config["default_perspective_count"] == 2
         assert config["absolute_max_attempts"] == 2
         assert config["http_client_timeout_seconds"] == 15.0
+        assert config["http_client_keepalive_timeout_seconds"] == 60.0
         assert config["log_level"] == 5
+        # uvicorn_server_timeout_keep_alive would be better checked in an integration test (can mock it though)
 
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:

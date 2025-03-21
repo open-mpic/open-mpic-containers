@@ -51,11 +51,11 @@ class MpicCoordinatorService:
         self.all_target_perspective_codes = list(perspectives.keys())
         self.default_perspective_count = int(os.environ["default_perspective_count"])
         self.global_max_attempts = (
-            int(os.environ["absolute_max_attempts"]) if "absolute_max_attempts" in os.environ else None
+            int(os.environ["absolute_max_attempts"]) if "absolute_max_attempts" in os.environ else None  # FIXME 1?
         )
         self.hash_secret = os.environ["hash_secret"]
         self.http_client_timeout_seconds = (
-            float(os.environ["http_client_timeout_seconds"]) if "http_client_timeout_seconds" in os.environ else 5
+            float(os.environ["http_client_timeout_seconds"]) if "http_client_timeout_seconds" in os.environ else 5  # 30
         )
         self.http_client_keepalive_timeout_seconds = (
             float(os.environ["http_client_keepalive_timeout_seconds"])
@@ -249,6 +249,7 @@ async def get_config():
                     "absolute_max_attempts": get_service().global_max_attempts,
                     "default_perspective_count": get_service().default_perspective_count,
                     "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
+                    "http_client_keepalive_timeout_seconds": get_service().http_client_keepalive_timeout_seconds,
                     "log_level": logger.getEffectiveLevel(),
                 }
         current = current.parent
