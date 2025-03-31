@@ -173,11 +173,11 @@ def main(raw_args=None):
 
             docker_compose_template_string_region = docker_compose_template_string_region.replace("{{rir}}", rir)
             
-            # Replace absolout max attempt count if present.
+            # Replace absolute max attempt count if present.
             if "absolute-max-attempts" in config:
-                docker_compose_template_string_region = docker_compose_template_string_region.replace("{{absoloute-max-attempts-key}}", f"absolute_max_attempts: \"{config['absolute-max-attempts']}\"")
+                docker_compose_template_string_region = docker_compose_template_string_region.replace("{{absolute-max-attempts-key}}", f"absolute_max_attempts: \"{config['absolute-max-attempts']}\"")
             else:
-                docker_compose_template_string_region = docker_compose_template_string_region.replace("{{absoloute-max-attempts-key}}", "")
+                docker_compose_template_string_region = docker_compose_template_string_region.replace("{{absolute-max-attempts-key}}", "")
             filename = args.tmp_dir + "/compose." + ip + ".yaml"
             with open(filename, 'w') as f:
                 f.write(docker_compose_template_string_region)

@@ -9,7 +9,7 @@ services:
       perspectives: '{{perspectives}}'
       default_perspective_count: "{{default-perspective-count}}"
       hash_secret: "{{hash-secret}}"
-      {{absoloute-max-attempts-key}}
+      {{absolute-max-attempts-key}}
     ports:
     - "127.0.0.1:8080:80/tcp"
     volumes:
