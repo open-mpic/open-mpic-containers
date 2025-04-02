@@ -28,7 +28,7 @@ These particular techniques are utilized in the AWS EC2 deployment example.
 
 # Images
 
-Images are auto built using a Github action. These are pushed to the Github Container Registry and may be used to pull in images in K8s, docker compose, etc... Instructions for manually building images are contained in `api-implementation/README.md`
+Images are auto built using a GitHub action. These are pushed to the GitHub Container Registry and may be used to pull in images in K8s, docker compose, etc... Instructions for manually building images are contained in `api-implementation/README.md`
 
 # Appendix: Devcontainers
 This repository contains a `.devcontainer` folder containing a `devcontainer.json` that can be used to develop open-mpic services. 
