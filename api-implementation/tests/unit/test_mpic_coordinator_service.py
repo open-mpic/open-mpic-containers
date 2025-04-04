@@ -205,7 +205,7 @@ class TestMpicCoordinatorService:
         assert response.status_code == status.HTTP_200_OK
         assert all(text in log_contents for text in ["mpic_coordinator", "TRACE"])  # Verify the log level was set
 
-    def service__should_return_app_config_diagnostics_give_diagnostics_request(self):
+    def service__should_return_app_config_diagnostics_give_diagnostics_request(self, set_env_variables):
         with TestClient(app) as client:
             response = client.get("/configz")
         assert response.status_code == status.HTTP_200_OK
@@ -220,6 +220,7 @@ class TestMpicCoordinatorService:
         assert config["http_client_keepalive_timeout_seconds"] == 60.0
         assert config["log_level"] == 5
         # uvicorn_server_timeout_keep_alive would be better checked in an integration test (can mock it though)
+        assert config["uvicorn_server_timeout_keep_alive"] == "25"
 
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:
