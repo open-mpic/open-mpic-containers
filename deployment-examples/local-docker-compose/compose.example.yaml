@@ -152,7 +152,8 @@ configs:
       default_perspective_count=2
       absolute_max_attempts=2
       hash_secret=hash_secret
-      http_client_timeout_seconds=5
+      http_client_timeout_seconds=30
+      http_client_keepalive_timeout_seconds=120
   log_config:
     file: ./common_config/log_config.yaml
   uvicorn_config:
