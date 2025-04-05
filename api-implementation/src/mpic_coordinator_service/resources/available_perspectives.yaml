@@ -2,10 +2,10 @@ available_regions:
   -
     code: "test-1"
     name: "Use something like Docker Compose or k8s to replace file with a proper configuration 1"
-    rir: "rir1"
+    rir: "arin"
     too_close_codes: []
   -
     code: "test-2"
     name: "Use something like Docker Compose or k8s to replace file with a proper configuration 2"
-    rir: "rir2"
+    rir: "ripe ncc"
     too_close_codes: []

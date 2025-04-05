@@ -11,6 +11,7 @@ from aiohttp import ClientResponse
 from fastapi import status
 from fastapi.testclient import TestClient
 from multidict import CIMultiDictProxy, CIMultiDict
+from open_mpic_core.common_domain.enum.regional_internet_registry import RegionalInternetRegistry
 from pydantic import TypeAdapter
 from requests import Response
 from yarl import URL
@@ -110,7 +111,7 @@ class TestMpicCoordinatorService:
 
             dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
             check_response = await service.call_remote_perspective(
-                RemotePerspective(code="test-1", rir="rir1"), CheckType.DCV, dcv_check_request
+                RemotePerspective(code="test-1", rir=RegionalInternetRegistry.ARIN), CheckType.DCV, dcv_check_request
             )
             assert check_response.check_passed is True
             # hijacking the value of 'details.found_at' to verify that the right arguments got passed to the call
