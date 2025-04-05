@@ -3,40 +3,40 @@ available_regions:
   -
     code: "test-1"
     name: "Test Region 1"
-    rir: "rir1"
+    rir: "arin"
     too_close_codes: []
   -
     code: "test-2"
     name: "Test Region 2"
-    rir: "rir1"
+    rir: "arin"
     too_close_codes: []
   -
     code: "test-3"
     name: "Test Region 3"
-    rir: "rir1"
+    rir: "arin"
     too_close_codes: []
   -
     code: "test-4"
     name: "Test Region 4"
-    rir: "rir2"
+    rir: "ripe ncc"
     too_close_codes: []
   -
     code: "test-5"
     name: "Test Region 5"
-    rir: "rir2"
+    rir: "ripe ncc"
     too_close_codes: []
   -
     code: "test-6"
     name: "Test Region 6"
-    rir: "rir3"
+    rir: "apnic"
     too_close_codes: []
   -
     code: "test-7"
     name: "Test Region 7"
-    rir: "rir1"
+    rir: "arin"
     too_close_codes: ['test-8']
   -
     code: "test-8"
     name: "Test Region 8"
-    rir: "rir1"
+    rir: "arin"
     too_close_codes: ['test-7']

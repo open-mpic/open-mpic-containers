@@ -17,6 +17,17 @@ from mpic_dcv_checker_service.main import app
 
 # noinspection PyMethodMayBeStatic
 class TestMpicDcvCheckerService:
+    @staticmethod
+    @pytest.fixture(scope="function")
+    def set_env_variables():
+        envvars = {
+            "uvicorn_server_timeout_keep_alive": "25",
+        }
+        with pytest.MonkeyPatch.context() as function_scoped_monkeypatch:
+            for k, v in envvars.items():
+                function_scoped_monkeypatch.setenv(k, v)
+            yield function_scoped_monkeypatch  # restore the environment afterward
+
     # noinspection PyMethodMayBeStatic
     def service__should_do_dcv_check_using_configured_dcv_checker(self, mocker):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
@@ -78,7 +89,7 @@ class TestMpicDcvCheckerService:
         print(log_contents)
         assert all(text in log_contents for text in ["MpicDcvChecker", "TRACE"])  # Verify the log level was set
 
-    def service__should_return_app_config_diagnostics_give_diagnostics_request(self):
+    def service__should_return_app_config_diagnostics_give_diagnostics_request(self, set_env_variables):
         with TestClient(app) as client:
             response = client.get("/configz")
         assert response.status_code == status.HTTP_200_OK
@@ -90,6 +101,7 @@ class TestMpicDcvCheckerService:
         assert config["http_client_timeout_seconds"] == 35  # default in app.conf file
         assert config["verify_ssl"] is True
         assert config["log_level"] == 5
+        assert config["uvicorn_server_timeout_keep_alive"] == "25"
 
     @staticmethod
     def create_dcv_check_response():

@@ -51,11 +51,11 @@ class MpicCoordinatorService:
         self.all_target_perspective_codes = list(perspectives.keys())
         self.default_perspective_count = int(os.environ["default_perspective_count"])
         self.global_max_attempts = (
-            int(os.environ["absolute_max_attempts"]) if "absolute_max_attempts" in os.environ else None
+            int(os.environ["absolute_max_attempts"]) if "absolute_max_attempts" in os.environ else None  # FIXME 1?
         )
         self.hash_secret = os.environ["hash_secret"]
         self.http_client_timeout_seconds = (
-            float(os.environ["http_client_timeout_seconds"]) if "http_client_timeout_seconds" in os.environ else 5
+            float(os.environ["http_client_timeout_seconds"]) if "http_client_timeout_seconds" in os.environ else 5  # 30
         )
         self.http_client_keepalive_timeout_seconds = (
             float(os.environ["http_client_keepalive_timeout_seconds"])
@@ -238,10 +238,15 @@ async def health_check():
 async def get_config():
     current = Path(__file__).parent
     for _ in range(3):  # Try up to 3 levels up (Docker flattens the file structure a fair bit)
-        test_path = current / "pyproject.toml"
-        if test_path.exists():
-            with test_path.open(mode="rb") as file:
+        path_to_project_config = current / "pyproject.toml"
+        if path_to_project_config.exists():
+            with path_to_project_config.open(mode="rb") as file:
                 pyproject = tomllib.load(file)
+                uvicorn_server_timeout_keep_alive = (
+                    os.environ["uvicorn_server_timeout_keep_alive"]
+                    if "uvicorn_server_timeout_keep_alive" in os.environ
+                    else None
+                )
                 return {
                     "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
                     "app_version": pyproject["project"]["version"],
@@ -249,7 +254,9 @@ async def get_config():
                     "absolute_max_attempts": get_service().global_max_attempts,
                     "default_perspective_count": get_service().default_perspective_count,
                     "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
+                    "http_client_keepalive_timeout_seconds": get_service().http_client_keepalive_timeout_seconds,
                     "log_level": logger.getEffectiveLevel(),
+                    "uvicorn_server_timeout_keep_alive": uvicorn_server_timeout_keep_alive,
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")
