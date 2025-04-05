@@ -5,5 +5,5 @@ available_regions:
     too_close_codes: ["gondor-south-1"] # Keep your enemies close
   - code: "shire-west-1"
     name: "The Shire (Hobbiton)"  
-    rir: "ripe ecc"  # it had to be a real RIR (no offence RIPE)
+    rir: "ripe ncc"  # it had to be a real RIR (no offence RIPE)
     too_close_codes: [] # Hobbits keep to themselves
