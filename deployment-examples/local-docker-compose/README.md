@@ -30,6 +30,16 @@ Only use valid, real RIR codes (e.g., "ARIN") in this file.
 If this file is improperly configured, the coordinator cannot reliably enforce a valid set of corroborating perspectives
 and may return results that are not valid to allow issuance. Invalid RIR codes will result in a runtime error.
 
+List of valid RIR codes:
+- ARIN
+- RIPE NCC
+- APNIC
+- LACNIC
+- AFRINIC
+
+The application in case-insensitive for RIR codes, but be sure to include the space if using "RIPE NCC".
+
+
 Modify the yaml file to add or remove perspectives as needed.
 
 It is recommended that the `available_perspectives.yaml` file be kept in sync with the perspectives configured in the
