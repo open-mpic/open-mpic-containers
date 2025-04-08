@@ -1,5 +1,5 @@
 # Start with any Python image - it's just for bootstrapping Hatch
-FROM python:3.13-alpine
+FROM python:3.13.2
 
 # Arg for path to specific service to build
 ARG SERVICE_PATH
