@@ -6,6 +6,8 @@ ARG SERVICE_PATH
 
 RUN echo "building service from path: ${SERVICE_PATH}"
 
+LABEL org.opencontainers.image.description="Python service for the MPIC project"
+
 # Dist/package upgrade
 RUN apt-get update && apt-get dist-upgrade -y
 
