@@ -88,7 +88,8 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-
+      - name: Print labels
+        run: echo "${{ steps.meta.outputs.labels }}"
       - name: Build and push image
         id: push
         uses: docker/build-push-action@v6
