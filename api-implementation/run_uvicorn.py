@@ -32,6 +32,9 @@ def main():
     workers = (os.cpu_count() * 2 + 1) if os.cpu_count() else 1
     config.setdefault('workers', workers)
 
+    # set OS env variable for FastAPI app to access to output runtime configuration
+    os.environ['uvicorn_server_timeout_keep_alive'] = config['timeout_keep_alive']
+
     # Start uvicorn with the configured parameters
     uvicorn.run(
         "main:app",

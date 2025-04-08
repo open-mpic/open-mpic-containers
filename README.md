@@ -17,6 +17,41 @@ The repository contains three containers:
 
 Different deployments (see deployment examples) will wrap deploy these containers indifferent contexts (e.g., docker compose, kubernetes) and may use various network architectures (e.g., public Internet, VPN, service mesh network) to facilitate calls between the containers. The containers may be placed beyond ingress and load balancing to provide optimal uptime and scaling. This is recommended for a production deployment.
 
+## Configuration Notes
+
+### available_perspectives.yaml
+Each deployment example utilizes an `available_perspectives.yaml` resource file in some form.
+
+This yaml file lists all the perspectives to which you are deploying your CAA and DCV checkers. It is consumed by
+the Coordinator service to determine which perspectives can be used for each check. It is also used by the
+Coordinator to determine whether a given set of corroborating perspectives is _valid_ by inspecting the RIR (Regional
+Internet Registry) that is specified for each perspective.
+
+Only use valid, real RIR codes (e.g., "ARIN") in this file.
+If this file is improperly configured, the coordinator cannot reliably enforce a valid set of corroborating perspectives
+and may return results that are not valid to allow issuance. Invalid RIR codes will result in a runtime error.
+
+List of valid RIR codes:
+- ARIN
+- RIPE NCC
+- APNIC
+- LACNIC
+- AFRINIC
+
+The application in case-insensitive for RIR codes, but be sure to include the space if using "RIPE NCC".
+
+Modify the yaml file to add or remove perspectives as needed.
+
+It is recommended that the `available_perspectives.yaml` file be kept in sync with the perspectives configured in the
+`compose.yaml` file (i.e., the perspectives to which you have deployed a checker).
+You will not encounter errors if the yaml file defines extra perspectives to which you have not deployed a checker. 
+You will, however, encounter errors if the yaml file does not define all the perspectives to which you _have_ deployed a checker.
+
+Make sure the codes in the `available_perspectives.yaml` file correspond to the perspective codes used to specify CAA 
+and DCV checker URLs in the `compose.yaml` file (as part of coordinator configuration).
+
+Check each of the **deployment examples** for other, deployment specific configuration files and how they should be treated.
+
 ## Authentication
 
 The containers themselves **do not contain any authentication or terminate TLS**. The appropriate security model of these systems is left to the deploying CAs. To comply with the MPIC requirement of the CA/Browser Forum Baseline Requirements, **any production deployment must properly implement security**. Some example approaches are:
