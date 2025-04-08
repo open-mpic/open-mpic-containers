@@ -64,7 +64,7 @@ jobs:
         id: openMpicCoreVersion
         uses: mikefarah/yq@master
         with:
-          cmd: yq -oy '.project.dependencies.[] | select(test("^open-mpic-core"))' api-implementation/pyproject.toml
+          cmd: yq -oy '.project.dependencies.[] | select(test("^open-mpic-core")) | split("==")[1]' api-implementation/pyproject.toml
       - name: Print Core Version
         run: echo "${{ steps.openMpicCoreVersion.outputs.result }}"
       # This step sets up QEMU for cross-platform builds.
