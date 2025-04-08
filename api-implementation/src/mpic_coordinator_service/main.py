@@ -55,7 +55,7 @@ class MpicCoordinatorService:
         )
         self.hash_secret = os.environ["hash_secret"]
         self.http_client_timeout_seconds = (
-            float(os.environ["http_client_timeout_seconds"]) if "http_client_timeout_seconds" in os.environ else 30
+            float(os.environ["http_client_timeout_seconds"]) if "http_client_timeout_seconds" in os.environ else 5
         )
         self.http_client_keepalive_timeout_seconds = (
             float(os.environ["http_client_keepalive_timeout_seconds"])
