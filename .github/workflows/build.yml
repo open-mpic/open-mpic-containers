@@ -60,12 +60,13 @@ jobs:
         run: echo "PYTHON_VERSION=$(cat api-implementation/src/mpic_${{ matrix.service }}_service/.python-version)" >> $GITHUB_OUTPUT
         # the variable is now available as $PYTHON_VERSION
 
-      - name: Get version from toml
+      - name: Get core version from pyprojet.toml
         id: openMpicCoreVersion
         uses: mikefarah/yq@master
         with:
           cmd: yq -oy '.project.dependencies.[] | select(test("^open-mpic-core"))' api-implementation/pyproject.toml
-
+      - name: Print Core Version
+        run: echo "${{ steps.openMpicCoreVersion.outputs.result }}"
       # This step sets up QEMU for cross-platform builds.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -111,7 +112,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          outputs: "type=image,name=target,annotation-index.org.opencontainers.image.description=openMPIC ${{ matrix.service }} service with OpenMpicCore $ {{ steps.openMpicCoreVersion.outputs.result }}"
+          outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=openMPIC ${{ matrix.service }} service with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }}
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[Using artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)."
       - name: Generate artifact attestation
