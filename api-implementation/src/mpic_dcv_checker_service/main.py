@@ -90,10 +90,15 @@ async def health_check():
 async def get_config():
     current = Path(__file__).parent
     for _ in range(3):  # Try up to 3 levels up (Docker flattens the file structure a fair bit)
-        test_path = current / "pyproject.toml"
-        if test_path.exists():
-            with test_path.open(mode="rb") as file:
+        path_to_project_config = current / "pyproject.toml"
+        if path_to_project_config.exists():
+            with path_to_project_config.open(mode="rb") as file:
                 pyproject = tomllib.load(file)
+                uvicorn_server_timeout_keep_alive = (
+                    os.environ["uvicorn_server_timeout_keep_alive"]
+                    if "uvicorn_server_timeout_keep_alive" in os.environ
+                    else None
+                )
                 return {
                     "open_mpic_api_spec_version": pyproject["tool"]["api"]["spec_version"],
                     "app_version": pyproject["project"]["version"],
@@ -101,6 +106,7 @@ async def get_config():
                     "verify_ssl": get_service().verify_ssl,
                     "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
                     "log_level": logger.getEffectiveLevel(),
+                    "uvicorn_server_timeout_keep_alive": uvicorn_server_timeout_keep_alive,
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")
