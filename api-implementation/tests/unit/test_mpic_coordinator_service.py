@@ -221,7 +221,7 @@ class TestMpicCoordinatorService:
         assert config["http_client_keepalive_timeout_seconds"] == 60.0
         assert config["log_level"] == 5
         # uvicorn_server_timeout_keep_alive would be better checked in an integration test (can mock it though)
-        assert config["uvicorn_server_timeout_keep_alive"] == "25"
+        assert config["uvicorn_server_timeout_keep_alive"] == 25
 
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:

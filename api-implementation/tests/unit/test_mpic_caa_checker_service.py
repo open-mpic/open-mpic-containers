@@ -82,7 +82,7 @@ class TestMpicCaaCheckerService:
         assert config["default_caa_domains"] == ["example.com", "example.net"]
         assert config["log_level"] == 5
         # uvicorn_server_timeout_keep_alive would be better checked in an integration test (can mock it though)
-        assert config["uvicorn_server_timeout_keep_alive"] == "25"
+        assert config["uvicorn_server_timeout_keep_alive"] == 25
 
     @staticmethod
     def create_caa_check_response():

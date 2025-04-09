@@ -243,7 +243,7 @@ async def get_config():
             with path_to_project_config.open(mode="rb") as file:
                 pyproject = tomllib.load(file)
                 uvicorn_server_timeout_keep_alive = (
-                    os.environ["uvicorn_server_timeout_keep_alive"]
+                    int(os.environ["uvicorn_server_timeout_keep_alive"])
                     if "uvicorn_server_timeout_keep_alive" in os.environ
                     else None
                 )
