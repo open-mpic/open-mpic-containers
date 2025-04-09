@@ -101,7 +101,7 @@ class TestMpicDcvCheckerService:
         assert config["http_client_timeout_seconds"] == 35  # default in app.conf file
         assert config["verify_ssl"] is True
         assert config["log_level"] == 5
-        assert config["uvicorn_server_timeout_keep_alive"] == "25"
+        assert config["uvicorn_server_timeout_keep_alive"] == 25
 
     @staticmethod
     def create_dcv_check_response():
