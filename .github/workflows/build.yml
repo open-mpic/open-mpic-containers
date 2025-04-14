@@ -53,6 +53,8 @@ jobs:
             type=raw,value={{date 'YYYYMMDD-HHmmss'}}
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
+        env:
+          DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
 
       - name: Get Python Version
         id: python-version
@@ -114,10 +116,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           # outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=openMPIC ${{ matrix.service }} service with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }}
           outputs: type=image,name=target
-          # Use URL-encoded newline (%0A) instead of \n
-          # Use block scalar | for readability - it will pass %0A literally
-          annotations: |
-            index:org.opencontainers.image.description=openMPIC ${{ matrix.service }} service with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }}.%0AThis is the second line.%0AAnd the third line.
+          annotations: ${{ steps.meta.outputs.annotations }}
+
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[Using artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)."
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
