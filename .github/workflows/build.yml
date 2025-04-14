@@ -60,7 +60,7 @@ jobs:
         run: echo "PYTHON_VERSION=$(cat api-implementation/src/mpic_${{ matrix.service }}_service/.python-version)" >> $GITHUB_OUTPUT
         # the variable is now available as $PYTHON_VERSION
 
-      - name: Get core version from pyprojet.toml
+      - name: Get core version from pyproject.toml
         id: openMpicCoreVersion
         uses: mikefarah/yq@master
         with:
