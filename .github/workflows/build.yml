@@ -51,6 +51,8 @@ jobs:
           tags: |
             # set timestamp tag
             type=raw,value={{date 'YYYYMMDD-HHmmss'}}
+            # set branch-timestamp tag
+            type=raw,value={{github.ref}}-{{date 'YYYYMMDD-HHmmss'}}
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
         env:
