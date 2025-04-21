@@ -183,6 +183,43 @@ jobs:
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
 
+      - name: Get container package version ID
+        if: success() && steps.push.outcome == 'success'
+        id: package-id
+        run: |
+          # Wait briefly for the package to be available in the API
+          sleep 10
+
+          # Tag to find (use the branch-timestamp tag as it's unique)
+          TAG="${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}"
+
+          # Call the GitHub API to find the package version ID
+          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/${{ matrix.service }}/versions")
+
+          # Parse the response to find the package version with our tag
+          PACKAGE_VERSION_ID=$(echo "$RESPONSE" | jq -r '.[] | select(.metadata.container.tags[] | contains("'"$TAG"'")) | .id')
+
+          if [ -n "$PACKAGE_VERSION_ID" ]; then
+            echo "Found package version ID: $PACKAGE_VERSION_ID"
+            echo "PACKAGE_VERSION_ID=$PACKAGE_VERSION_ID" >> $GITHUB_OUTPUT
+            
+            # Update the step summary with direct links
+            echo "**Direct Package Links:**" >> $GITHUB_STEP_SUMMARY
+            echo "- [Package Version Link](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/${{ matrix.service }}/$PACKAGE_VERSION_ID)" >> $GITHUB_STEP_SUMMARY
+            echo "- [Branch-Timestamp Tag ($TAG)](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/${{ matrix.service }}?tag=$TAG)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "---" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Warning: Could not find package version ID for tag $TAG"
+            echo "**Package Links:**" >> $GITHUB_STEP_SUMMARY
+            echo "- [All Versions](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/${{ matrix.service }})" >> $GITHUB_STEP_SUMMARY
+            echo "- [Filter by Tag ($TAG)](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/${{ matrix.service }}?tag=$TAG)" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "---" >> $GITHUB_STEP_SUMMARY
+          fi
+
   # Image-Build-Unbound:
   #   runs-on: ubuntu-latest
   #   permissions:
