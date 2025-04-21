@@ -91,9 +91,8 @@ jobs:
             type=raw,value=${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
-          labels: |
-            org.opencontainers.image.title=MyCustomTitle
-            index:org.opencontainers.image.description=Custom description
+          annotations: |
+            org.opencontainers.image.description=Custom description
 
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
