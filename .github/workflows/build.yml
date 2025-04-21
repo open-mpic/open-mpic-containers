@@ -95,12 +95,8 @@ jobs:
       - name: Prepare image description
         id: image-desc
         run: |
-          echo "DESC<<EOF" >> $GITHUB_OUTPUT
-          echo "OpenMPIC ${{ matrix.service }} service" >> $GITHUB_OUTPUT
-          echo "with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }}" >> $GITHUB_OUTPUT
-          echo "Built on: $(date -u)" >> $GITHUB_OUTPUT
-          echo "Branch: ${{ github.ref_name }}" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          DESCRIPTION="OpenMPIC ${{ matrix.service }} service | with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }} | Built on: ${{ needs.shared-tags.outputs.timestamp }} | Branch: ${{ needs.shared-tags.outputs.branch-name }}"
+          echo "DESC=$DESCRIPTION" >> $GITHUB_OUTPUT
 
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
