@@ -78,6 +78,20 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Get Python Version
+        id: python-version
+        # read the ${{ matrix.service }}/.python-version file and load the version into a variable that is used in the next step
+        run: echo "PYTHON_VERSION=$(cat api-implementation/src/mpic_${{ matrix.service }}_service/.python-version)" >> $GITHUB_OUTPUT
+        # the variable is now available as $PYTHON_VERSION
+
+      - name: Get core version from pyproject.toml
+        id: openMpicCoreVersion
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -oy '.project.dependencies.[] | select(test("^open-mpic-core")) | split("==")[1]' api-implementation/pyproject.toml
+      - name: Print Core Version
+        run: echo "${{ steps.openMpicCoreVersion.outputs.result }}"
+
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -92,25 +106,11 @@ jobs:
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
           annotations: |
-            org.opencontainers.image.description=Custom description annotations
-
+            org.opencontainers.image.description=openMPIC ${{ matrix.service }} service with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }}
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
           DOCKER_METADATA_SET_OUTPUT_ENV: true
 
-      - name: Get Python Version
-        id: python-version
-        # read the ${{ matrix.service }}/.python-version file and load the version into a variable that is used in the next step
-        run: echo "PYTHON_VERSION=$(cat api-implementation/src/mpic_${{ matrix.service }}_service/.python-version)" >> $GITHUB_OUTPUT
-        # the variable is now available as $PYTHON_VERSION
-
-      - name: Get core version from pyproject.toml
-        id: openMpicCoreVersion
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq -oy '.project.dependencies.[] | select(test("^open-mpic-core")) | split("==")[1]' api-implementation/pyproject.toml
-      - name: Print Core Version
-        run: echo "${{ steps.openMpicCoreVersion.outputs.result }}"
       # This step sets up QEMU for cross-platform builds.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
