@@ -219,12 +219,6 @@ jobs:
             echo "- [📋 Container Registry](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/${{ matrix.service }})" >> $GITHUB_STEP_SUMMARY
           fi
 
-          # Add pull command for convenience
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Pull Command:** 📥" >> $GITHUB_STEP_SUMMARY
-          echo "```bash" >> $GITHUB_STEP_SUMMARY
-          echo "docker pull ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:$TAG" >> $GITHUB_STEP_SUMMARY
-          echo "```" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
 
