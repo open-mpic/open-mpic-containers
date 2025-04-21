@@ -35,7 +35,7 @@ jobs:
 
       - name: Generate legacy-timestamp format in shared output for synchronization with matrix
         id: legacy-timestamp
-        # This is to support existing tags that are already in the legacy format. It generates a timestamp in a legacy format for tagging the Docker images. 
+        # This is to support existing tags that are already in the legacy format. It generates a timestamp in a legacy format for tagging the Docker images.
         run: echo "LEGACY-TIMESTAMP=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
 
       - name: Generate timestamp for tag in ISO 8601-1:2019 basic format
@@ -153,8 +153,6 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           # outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=openMPIC ${{ matrix.service }} service with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }}
-          outputs: |
-            type=image,name=target,"annotation-index.org.opencontainers.image.description=${{ steps.meta.outputs.annotations }}"
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[Using artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)."
       - name: Generate artifact attestation
