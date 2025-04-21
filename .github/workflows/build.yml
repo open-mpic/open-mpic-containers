@@ -151,6 +151,7 @@ jobs:
           file: api-implementation/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          annotations: ${{ steps.meta.outputs.annotations }}
 
       # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[Using artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)."
       - name: Generate artifact attestation
