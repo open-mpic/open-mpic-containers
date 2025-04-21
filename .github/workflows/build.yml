@@ -93,10 +93,11 @@ jobs:
             type=raw,value=latest,enable={{is_default_branch}}
           labels: |
             org.opencontainers.image.title=MyCustomTitle
-            org.opencontainers.image.description=Custom description
+            index:org.opencontainers.image.description=Custom description
 
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
+          DOCKER_METADATA_SET_OUTPUT_ENV: true
 
       - name: Get Python Version
         id: python-version
