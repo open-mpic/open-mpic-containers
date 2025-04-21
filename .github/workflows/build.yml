@@ -92,6 +92,16 @@ jobs:
       - name: Print Core Version
         run: echo "${{ steps.openMpicCoreVersion.outputs.result }}"
 
+      - name: Prepare image description
+        id: image-desc
+        run: |
+          echo "DESC<<EOF" >> $GITHUB_OUTPUT
+          echo "OpenMPIC ${{ matrix.service }} service" >> $GITHUB_OUTPUT
+          echo "with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }}" >> $GITHUB_OUTPUT
+          echo "Built on: $(date -u)" >> $GITHUB_OUTPUT
+          echo "Branch: ${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
         id: meta
@@ -106,7 +116,7 @@ jobs:
             # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
           annotations: |
-            org.opencontainers.image.description=openMPIC ${{ matrix.service }} service with OpenMpicCore ${{ steps.openMpicCoreVersion.outputs.result }}
+            org.opencontainers.image.description=${{ steps.image-desc.outputs.DESC }}
         env:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
           DOCKER_METADATA_SET_OUTPUT_ENV: true
