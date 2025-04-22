@@ -92,7 +92,7 @@ jobs:
         id: openMpicSpecVersion
         uses: mikefarah/yq@master
         with:
-          cmd: yq -oy '.project.dependencies.[] | select(test("^spec_version")) | split("==")[1]' api-implementation/pyproject.toml
+          cmd: yq -oy '.tool.api.spec_version' api-implementation/pyproject.toml
 
       - name: Prepare image description
         id: image-desc
