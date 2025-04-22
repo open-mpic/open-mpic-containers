@@ -62,9 +62,7 @@ jobs:
       id-token: write
     strategy:
       matrix:
-        service: [coordinator]
-        # TEMPORARY TEST
-        # service: [coordinator, dcv_checker, caa_checker]
+        service: [coordinator, dcv_checker, caa_checker]
 
     steps:
       - name: Checkout repository
