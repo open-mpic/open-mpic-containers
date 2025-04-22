@@ -227,9 +227,6 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    strategy:
-      matrix:
-        service: [unbound]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -246,7 +243,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound
           tags: |
             # set timestamp tag
             type=raw,value={{date 'YYYYMMDD-HHmmss'}}
@@ -270,11 +267,11 @@ jobs:
           load: true
           context: unbound
           file: unbound/Dockerfile
-          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ env.TEST_TAG }}
+          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound:${{ env.TEST_TAG }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ env.TEST_TAG }}
+          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound:${{ env.TEST_TAG }}
           format: "table"
           exit-code: "1"
           ignore-unfixed: true
@@ -296,6 +293,6 @@ jobs:
       - name: Generate artifact attestation
         uses: actions/attest-build-provenance@v1
         with:
-          subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}
+          subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound
           subject-digest: ${{ steps.push.outputs.digest }}
           push-to-registry: true
