@@ -104,7 +104,7 @@ jobs:
           # Add a nicely formatted description to the job summary
           echo "### 🐳 Image Description" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "**Service:** OpenMPIC ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Service:** Open MPIC ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
           echo "**Open MPIC Core Version:** ${{ steps.openMpicCoreVersion.outputs.result }}" >> $GITHUB_STEP_SUMMARY
           echo "**Open MPIC Spec Version:** ${{ steps.openMpicSpecVersion.outputs.result }}" >> $GITHUB_STEP_SUMMARY
           echo "**Build Time:** ${{ needs.shared-tags.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
