@@ -82,13 +82,13 @@ jobs:
         run: echo "PYTHON_VERSION=$(cat api-implementation/src/mpic_${{ matrix.service }}_service/.python-version)" >> $GITHUB_OUTPUT
         # the variable is now available as $PYTHON_VERSION
 
-      - name: Get core version from pyproject.toml
+      - name: Get Open MPIC Core version
         id: openMpicCoreVersion
         uses: mikefarah/yq@master
         with:
           cmd: yq -oy '.project.dependencies.[] | select(test("^open-mpic-core")) | split("==")[1]' api-implementation/pyproject.toml
 
-      - name: Get OpenMPIC Spec Version from pyproject.toml
+      - name: Get Open MPIC Spec Version
         id: openMpicSpecVersion
         uses: mikefarah/yq@master
         with:
@@ -98,15 +98,15 @@ jobs:
         id: image-desc
         run: |
           # Keep the single-line description for Docker annotations
-          DESCRIPTION="OpenMPIC ${{ matrix.service }} service | OpenMpicCore Version: ${{ steps.openMpicCoreVersion.outputs.result }} | OpenMPIC Spec Version: ${{ steps.openMpicSpecVersion.outputs.result }} | Built on: ${{ needs.shared-tags.outputs.timestamp }} | Branch: ${{ needs.shared-tags.outputs.branch-name }}"
+          DESCRIPTION="Open MPIC ${{ matrix.service }} service | Open Mpic Core Version: ${{ steps.openMpicCoreVersion.outputs.result }} | Open MPIC Spec Version: ${{ steps.openMpicSpecVersion.outputs.result }} | Built on: ${{ needs.shared-tags.outputs.timestamp }} | Branch: ${{ needs.shared-tags.outputs.branch-name }}"
           echo "DESC=$DESCRIPTION" >> $GITHUB_OUTPUT
 
           # Add a nicely formatted description to the job summary
           echo "### 🐳 Image Description" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Service:** OpenMPIC ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
-          echo "**OpenMPIC Core Version:** ${{ steps.openMpicCoreVersion.outputs.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "**OpenMPIC Spec Version:** ${{ steps.openMpicSpecVersion.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Open MPIC Core Version:** ${{ steps.openMpicCoreVersion.outputs.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Open MPIC Spec Version:** ${{ steps.openMpicSpecVersion.outputs.result }}" >> $GITHUB_STEP_SUMMARY
           echo "**Build Time:** ${{ needs.shared-tags.outputs.timestamp }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ needs.shared-tags.outputs.branch-name }}" >> $GITHUB_STEP_SUMMARY
           echo "**Image:** \`${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}\`" >> $GITHUB_STEP_SUMMARY
