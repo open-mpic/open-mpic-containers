@@ -25,8 +25,21 @@ class MpicDcvCheckerService:
             if "http_client_timeout_seconds" in os.environ and float(os.environ["http_client_timeout_seconds"])
             else 30
         )
+        self.dns_timeout_seconds = (
+            float(os.environ["dns_timeout_seconds"]) if "dns_timeout_seconds" in os.environ else None
+        )
+        self.dns_resolution_lifetime_seconds = (
+            float(os.environ["dns_resolution_lifetime_seconds"])
+            if "dns_resolution_lifetime_seconds" in os.environ
+            else None
+        )
+
         self.dcv_checker = MpicDcvChecker(
-            http_client_timeout=self.http_client_timeout_seconds, reuse_http_client=True, verify_ssl=self.verify_ssl
+            http_client_timeout=self.http_client_timeout_seconds,
+            reuse_http_client=True,
+            verify_ssl=self.verify_ssl,
+            dns_timeout=self.dns_timeout_seconds,
+            dns_resolution_lifetime=self.dns_resolution_lifetime_seconds,
         )
 
     async def shutdown(self):
@@ -107,6 +120,8 @@ async def get_config():
                     "http_client_timeout_seconds": get_service().http_client_timeout_seconds,
                     "log_level": logger.getEffectiveLevel(),
                     "uvicorn_server_timeout_keep_alive": uvicorn_server_timeout_keep_alive,
+                    "dns_timeout_seconds": get_service().dns_timeout_seconds,
+                    "dns_resolution_lifetime_seconds": get_service().dns_resolution_lifetime_seconds,
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")
