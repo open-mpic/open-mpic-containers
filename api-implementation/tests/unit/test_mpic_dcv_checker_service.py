@@ -12,16 +12,25 @@ from open_mpic_core import DcvValidationMethod
 from open_mpic_core import MpicValidationError
 from open_mpic_core_test.test_util.valid_check_creator import ValidCheckCreator
 
-from mpic_dcv_checker_service.main import app
+import mpic_dcv_checker_service.main as main_module
 
 
 # noinspection PyMethodMayBeStatic
 class TestMpicDcvCheckerService:
     @staticmethod
+    @pytest.fixture(scope="function", autouse=True)
+    def clear_service():
+        # Clear the global service instance before each test to ensure a fresh state.
+        main_module._service = None
+        yield
+
+    @staticmethod
     @pytest.fixture(scope="function")
     def set_env_variables():
         envvars = {
             "uvicorn_server_timeout_keep_alive": "25",
+            "dns_timeout_seconds": "1",
+            "dns_resolution_lifetime_seconds": "2",
         }
         with pytest.MonkeyPatch.context() as function_scoped_monkeypatch:
             for k, v in envvars.items():
@@ -37,7 +46,7 @@ class TestMpicDcvCheckerService:
         awaitable_mock_response = AsyncMock(return_value=mock_dcv_response)
         mocker.patch("open_mpic_core.MpicDcvChecker.check_dcv", new=awaitable_mock_response)
 
-        with TestClient(app) as client:
+        with TestClient(main_module.app) as client:
             response = client.post("/dcv", json=dcv_check_request.model_dump())
 
         assert response.status_code == status.HTTP_200_OK
@@ -65,14 +74,14 @@ class TestMpicDcvCheckerService:
 
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
 
-        with TestClient(app) as client:
+        with TestClient(main_module.app) as client:
             response = client.post("/dcv", json=dcv_check_request.model_dump())
 
         assert response.status_code == expected_status_code
         assert response.json() == mock_dcv_response.model_dump()
 
     def service__should_return_healthy_status_given_health_check_request(self):
-        with TestClient(app) as client:
+        with TestClient(main_module.app) as client:
             response = client.get("/healthz")
 
         assert response.status_code == status.HTTP_200_OK
@@ -82,15 +91,20 @@ class TestMpicDcvCheckerService:
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
         check_response = TestMpicDcvCheckerService.create_dcv_check_response()
         mocker.patch("open_mpic_core.MpicDcvChecker.perform_http_based_validation", return_value=check_response)
-        with TestClient(app) as client:
+        with TestClient(main_module.app) as client:
             response = client.post("/dcv", json=dcv_check_request.model_dump())
         assert response.status_code == status.HTTP_200_OK
         log_contents = setup_logging.getvalue()
         print(log_contents)
         assert all(text in log_contents for text in ["MpicDcvChecker", "TRACE"])  # Verify the log level was set
 
-    def service__should_return_app_config_diagnostics_give_diagnostics_request(self, set_env_variables):
-        with TestClient(app) as client:
+    def service__should_set_dns_timeout_configuration_of_dcv_checker(self, set_env_variables):
+        service = main_module.MpicDcvCheckerService()
+        assert service.dcv_checker.resolver.timeout == 1.0  # default is 2.0
+        assert service.dcv_checker.resolver.lifetime == 2.0  # default is 5.0
+
+    def service__should_return_app_config_diagnostics_given_diagnostics_request(self, set_env_variables):
+        with TestClient(main_module.app) as client:
             response = client.get("/configz")
         assert response.status_code == status.HTTP_200_OK
         config = response.json()
@@ -102,6 +116,8 @@ class TestMpicDcvCheckerService:
         assert config["verify_ssl"] is True
         assert config["log_level"] == 5
         assert config["uvicorn_server_timeout_keep_alive"] == 25
+        assert config["dns_timeout_seconds"] == 1.0
+        assert config["dns_resolution_lifetime_seconds"] == 2.0
 
     @staticmethod
     def create_dcv_check_response():

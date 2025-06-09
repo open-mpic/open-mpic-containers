@@ -21,7 +21,19 @@ class MpicCaaCheckerService:
         load_dotenv(config_path)
         # FIXME warn on default_caa_domain_list None or empty
         self.default_caa_domain_list = os.environ["default_caa_domains"].split("|")
-        self.caa_checker = MpicCaaChecker(self.default_caa_domain_list)
+        self.dns_timeout_seconds = (
+            float(os.environ["dns_timeout_seconds"]) if "dns_timeout_seconds" in os.environ else None
+        )
+        self.dns_resolution_lifetime_seconds = (
+            float(os.environ["dns_resolution_lifetime_seconds"])
+            if "dns_resolution_lifetime_seconds" in os.environ
+            else None
+        )
+        self.caa_checker = MpicCaaChecker(
+            self.default_caa_domain_list,
+            dns_timeout=self.dns_timeout_seconds,
+            dns_resolution_lifetime=self.dns_resolution_lifetime_seconds,
+        )
 
     async def check_caa(self, caa_request: CaaCheckRequest):
         return await self.caa_checker.check_caa(caa_request)
@@ -78,6 +90,8 @@ async def get_config():
                     "default_caa_domains": get_service().default_caa_domain_list,
                     "log_level": logger.getEffectiveLevel(),
                     "uvicorn_server_timeout_keep_alive": uvicorn_server_timeout_keep_alive,
+                    "dns_timeout_seconds": get_service().dns_timeout_seconds,
+                    "dns_resolution_lifetime_seconds": get_service().dns_resolution_lifetime_seconds,
                 }
         current = current.parent
     raise FileNotFoundError("Could not find pyproject.toml")

@@ -19,6 +19,161 @@ Different deployments (see deployment examples) will wrap deploy these container
 
 ## Configuration Notes
 
+### Configuration Parameters for Coordinator
+
+The Coordinator service is configured through multiple configuration files.
+* An `app.conf` file specific to the Coordinator specifies certain operating parameters.
+* A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
+* A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
+
+The `log_config.yaml` and `uvicorn_config.yaml` files can be reused across all services in the repository.
+
+#### Parameters available in `app.conf`
+
+- **perspectives**
+
+    **Required.**
+    JSON representation of an object that specifies the available CAA and DCV checkers for each perspective.
+    Specifies the URLs of the CAA and DCV checker services to which the Coordinator will send requests.
+    The Coordinator will use these URLs to make calls to the CAA and DCV checkers.
+    Each perspective is identified by a unique code and this code **_MUST_** correspond to the codes used in
+    `available_perspectives.yaml` (see below).
+
+    The structure is as follows:
+```
+    "perspectives": {
+        "perspective_code_1": {
+            "caa_endpoint_info": {
+                "url": "http://caa_checker_1_url:port/caa"
+            },
+            "dcv_endpoint_info": {
+                "url": "http://dcv_checker_1_url:port/dcv"
+            }
+        }
+    }
+```
+
+  Example:
+  > `perspectives={"us-east-1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"eu-west-2":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}`
+
+- **default_perspective_count**
+
+    **Required**. The number of perspectives to use for each check.
+    (There is no default because the minimum required for a valid check will change over time.)
+    This can be overridden by the `perspective_count` parameter in individual requests. 
+
+    Example:
+    > `default_perspective_count=3`
+
+- **hash_secret**
+
+    **Required.** A string used for seeding a random number generator used for building perspective cohorts.
+    This is used to make it more difficult for adversaries to predict which perspectives will be used for a given check.
+
+    Example:
+    > `hash_secret="your-long-random-secret"`
+
+- **absolute_max_attempts**
+
+    Optional. The maximum number of attempts the Coordinator will ever make to get a valid response from the perspectives.
+    Overrules the `max_attempts` parameter in individual requests if `absolute_max_attempts` is the lower value of the two.
+    The default is `None`, which means no absolute limit on the number of attempts.
+
+    Example:
+    > `absolute_max_attempts=3`
+
+- **http_client_timeout_seconds**
+
+    Optional. Total timeout in seconds for HTTP client requests made by the Coordinator service.
+    The default is 300 seconds, which is built into the aiohttp library used by the service.
+    These requests are made to the CAA and DCV checker services.
+    
+    Example:
+    > `http_client_timeout_seconds=30`
+
+- **http_client_keepalive_timeout_seconds** 
+    
+    Optional. Timeout in seconds for HTTP connection reuse after releasing. 
+    The default is 15 seconds, which is built into the aiohttp library used by the service.
+
+    **Note**: this should not exceed (there's no point) the `timeout_keep_alive` parameter in the Uvicorn configuration used for the checkers.
+
+    Example:
+    > `http_client_keepalive_timeout_seconds=120`
+
+### Configuration for CAA Checker
+
+The CAA Checker service is configured through multiple configuration files.
+* An `app.conf` file specific to CAA checkers specifies certain operating parameters.
+* A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
+* A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
+
+#### Parameters available in `config.yaml`
+- **default_caa_domains**
+
+    **Required.**
+    Pipe-separated list of domain names.
+    Specifies a default list of CAA domains to use for calls to the CAA checker service.
+    The CAA checker service will use this list of domains when no specific domain is provided in an individual request.
+
+    Example:
+    > `default_caa_domains="example.com|example.org"`
+
+- **dns_timeout_seconds**
+
+    Optional. Timeout in seconds for individual (per-resolver) DNS queries made by the CAA checker service.
+    The default is 2 seconds, which is built into the dnspython library used by the service.
+
+    Example:
+    > `dns_timeout_seconds=3`
+
+- **dns_resolution_lifetime_seconds**
+
+    Optional. Timeout in seconds for the total time allowed for DNS resolution across all resolvers.
+    The default is 5 seconds, which is built into the dnspython library used by the service.
+
+    Example:
+    > `dns_resolution_lifetime_seconds=6`
+
+#### Configuration Parameters for DCV Checker
+
+The DCV Checker service is configured through multiple configuration files.
+* An `app.conf` file specific to DCV checkers specifies certain operating parameters.
+* A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
+* A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
+
+#### Parameters available in `config.yaml`
+- **verify_ssl**
+
+    Optional. Whether to verify SSL certificates when making HTTPS requests.
+    The default is `True`, which means SSL certificates will be verified.
+    
+    Example:
+    > `verify_ssl=False`
+
+- **http_client_timeout_seconds**
+
+    Optional. Total timeout in seconds for HTTP client requests made by the DCV checker service.
+    The default is 300 seconds, built into the aiohttp library used by the service.
+
+    Example:
+    > `http_client_timeout_seconds=15`
+
+- **dns_timeout_seconds**
+
+    Optional. Timeout in seconds for individual (per-resolver) DNS queries made by the DCV checker service.
+    The default is 2 seconds, which is built into the dnspython library used by the service.
+
+    Example:
+    > `dns_timeout_seconds=3`
+- **dns_resolution_lifetime**
+
+    Optional. Timeout in seconds for the total time allowed for DNS resolution across all resolvers.
+    The default is 5 seconds, which is built into the dnspython library used by the service.
+
+    Example:
+    > `dns_resolution_lifetime_seconds=6`
+
 ### available_perspectives.yaml
 Each deployment example utilizes an `available_perspectives.yaml` resource file in some form.
 
