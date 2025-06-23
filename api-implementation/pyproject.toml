@@ -55,7 +55,7 @@ Issues = "https://github.com/open-mpic/open-mpic-restapi-server/issues"
 Source = "https://github.com/open-mpic/open-mpic-restapi-server"
 
 [tool.api]
-spec_version = "3.3.1"
+spec_version = "3.5.0"
 spec_repository = "https://github.com/open-mpic/open-mpic-specification"
 
 [tool.hatch]
