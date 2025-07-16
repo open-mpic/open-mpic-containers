@@ -274,7 +274,7 @@ jobs:
         with:
           load: true
           context: unbound
-          file: dns-resolver-unbound/Dockerfile
+          file: unbound/Dockerfile
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound:${{ env.TEST_TAG }}
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.28.0
@@ -292,7 +292,7 @@ jobs:
         with:
           context: unbound
           platforms: linux/amd64,linux/arm64
-          file: dns-resolver-unbound/Dockerfile
+          file: unbound/Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
