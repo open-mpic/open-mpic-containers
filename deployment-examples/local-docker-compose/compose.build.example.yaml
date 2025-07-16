@@ -110,7 +110,7 @@ services:
 
   unbound:
     build:
-      context: ../../unbound
+      context: ../../dns-resolver-unbound
     restart: unless-stopped
     #volumes:
     #  - ./unbound_config/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro
