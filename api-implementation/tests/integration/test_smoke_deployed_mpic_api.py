@@ -35,7 +35,6 @@ class TestDeployedMpicApi:
             yield api_client
             api_client.close()
 
-    @pytest.mark.skip(reason="temporary for debugging purposes")
     def api__should_return_200_and_passed_corroboration_for_successful_caa_check(self, api_client):
         request = MpicCaaRequest(
             trace_identifier=f"test_trace_id_{time.time()}",
@@ -50,7 +49,6 @@ class TestDeployedMpicApi:
         response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
         self.validate_200_response(response)
 
-    @pytest.mark.skip(reason="temporary for debugging purposes")
     def api__should_return_200_and_successful_corroboration_for_valid_dns_01_validation(self, api_client):
         request = MpicDcvRequest(
             trace_identifier=f"test_trace_id_{time.time()}",
@@ -58,25 +56,6 @@ class TestDeployedMpicApi:
             orchestration_parameters=MpicRequestOrchestrationParameters(perspective_count=2, quorum_count=2),
             dcv_check_parameters=DcvAcmeDns01ValidationParameters(
                 key_authorization_hash="7FwkJPsKf-TH54wu4eiIFA3nhzYaevsL7953ihy-tpo"
-            ),
-        )
-
-        print("\nRequest:\n", json.dumps(request.model_dump(), indent=4))  # pretty print request body
-        response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
-        self.validate_200_response(response)
-
-    # @pytest.mark.skip(reason="temporary for debugging purposes")
-    @pytest.mark.parametrize("domain, challenge", [
-        ("whsycyc.site", "Oh8Oe5fYKce_inQkZf4sIHDMMzRV5bERIlnxCR4wEXE"),
-    ])
-    def api__should_not_follow_cnames_given_malformed_recordset_although_it_would_be_correct(
-            self, api_client, domain, challenge):
-        request = MpicDcvRequest(
-            trace_identifier=f"test_trace_id_{time.time()}",
-            domain_or_ip_target=domain,
-            orchestration_parameters=MpicRequestOrchestrationParameters(perspective_count=2, quorum_count=2),
-            dcv_check_parameters=DcvAcmeDns01ValidationParameters(
-                key_authorization_hash=challenge
             ),
         )
 
