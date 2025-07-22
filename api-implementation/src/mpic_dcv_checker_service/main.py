@@ -143,11 +143,13 @@ async def memory_profile():
     total_memory = muppy.get_size(all_objects)
 
     tracemalloc_snapshot = tracemalloc.take_snapshot()
-    filtered_snapshot = tracemalloc_snapshot.filter_traces([
-        tracemalloc.Filter(False, tracemalloc.__file__),
-        tracemalloc.Filter(False, "muppy.py"),
-        tracemalloc.Filter(False, "summary.py"),
-    ])
+    filtered_snapshot = tracemalloc_snapshot.filter_traces(
+        [
+            tracemalloc.Filter(False, tracemalloc.__file__),
+            tracemalloc.Filter(False, "muppy.py"),
+            tracemalloc.Filter(False, "summary.py"),
+        ]
+    )
     top_stats = tracemalloc_snapshot.statistics("traceback")
     tracebacks = [stat.traceback.format() for stat in top_stats[:20]]
 
