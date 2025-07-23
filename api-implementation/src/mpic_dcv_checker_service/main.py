@@ -150,7 +150,7 @@ async def memory_profile():
             tracemalloc.Filter(False, "summary.py"),
         ]
     )
-    top_stats = tracemalloc_snapshot.statistics("traceback")
+    top_stats = filtered_snapshot.statistics("traceback")
     tracebacks = [stat.traceback.format() for stat in top_stats[:20]]
 
     return PrettyJSONResponse(
