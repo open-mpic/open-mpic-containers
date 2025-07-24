@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 import tomllib
 import importlib.metadata
 import tracemalloc
@@ -67,7 +68,7 @@ class MpicDcvCheckerService:
 _service = None
 
 # Start memory tracing for leak detection
-tracemalloc.start(5)
+tracemalloc.start(8)
 
 
 def get_service() -> MpicDcvCheckerService:
@@ -124,7 +125,7 @@ async def health_check():
 @app.get("/memprofilez")
 async def memory_profile():
     """
-    Endpoint to check for memory leaks.
+    Endpoint to check for memory leaks
     """
     all_objects = muppy.get_objects()
     sum_objects = summary.summarize(all_objects)
@@ -133,11 +134,11 @@ async def memory_profile():
     json_summary = []
     for row in sum_objects:
         if len(row) == 3:  # Ensure we have [type, count, size]
-            json_summary.append({"type": row[0], "count": row[1], "size": row[2]})
+            json_summary.append({"type": str(row[0]), "count": row[1], "size": row[2]})  # Convert type to string
 
-    # Sort by size in descending order and limit to top 20
+    # Sort by size and limit to top 20
     json_summary.sort(key=lambda x: x["size"], reverse=True)
-    json_summary = json_summary[:100]
+    json_summary = json_summary[:20]
 
     # Get total memory size
     total_memory = muppy.get_size(all_objects)
@@ -153,13 +154,55 @@ async def memory_profile():
     top_stats = filtered_snapshot.statistics("traceback")
     tracebacks = [stat.traceback.format() for stat in top_stats[:20]]
 
+    # Additional targeted analysis
+    http_objects = {}
+    for obj in all_objects:
+        obj_type = type(obj).__name__
+        try:
+            obj_module = str(getattr(type(obj), "__module__", ""))
+        except:
+            obj_module = ""
+
+        # Track aiohttp, yarl, and HTTP-related objects
+        if any(
+            keyword in obj_module
+            for keyword in [
+                "aiohttp",
+                "yarl",
+                "http",
+                "url",
+                "client",
+                "connector",
+                "connection",
+                "transport",
+                "socket",
+                "ssl",
+            ]
+        ):
+            key = f"{obj_module}.{obj_type}"
+            if key not in http_objects:
+                http_objects[key] = {"count": 0, "size": 0}
+            http_objects[key]["count"] += 1
+            try:
+                http_objects[key]["size"] += sys.getsizeof(obj)
+            except:
+                pass
+
     return PrettyJSONResponse(
         status_code=status.HTTP_200_OK,
         content={
-            "message": "Memory profile",
-            "summary": json_summary,
+            "message": "Enhanced memory profile",
+            "summary": json_summary[:50],  # Top 50 overall
             "total_memory": total_memory,
             "top_tracebacks": tracebacks,
+            # New targeted analysis
+            "http_related_objects": dict(sorted(http_objects.items(), key=lambda x: x[1]["size"], reverse=True)[:20]),
+            # Quick insights
+            "insights": {
+                "aiohttp_url_objects": sum(1 for obj in all_objects if type(obj).__name__ == "URL"),
+                "active_connections": sum(1 for obj in all_objects if "connection" in type(obj).__name__.lower()),
+                "response_objects": sum(1 for obj in all_objects if "response" in type(obj).__name__.lower()),
+            },
         },
     )
 
