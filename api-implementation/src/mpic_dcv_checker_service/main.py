@@ -128,6 +128,7 @@ async def memory_profile():
     Endpoint to check for memory leaks
     """
     all_objects = muppy.get_objects()
+
     sum_objects = summary.summarize(all_objects)
 
     # Convert summary to JSON-serializable format
@@ -138,10 +139,6 @@ async def memory_profile():
 
     # Sort by size and limit to top 20
     json_summary.sort(key=lambda x: x["size"], reverse=True)
-    json_summary = json_summary[:20]
-
-    # Get total memory size
-    total_memory = muppy.get_size(all_objects)
 
     tracemalloc_snapshot = tracemalloc.take_snapshot()
     filtered_snapshot = tracemalloc_snapshot.filter_traces(
@@ -192,8 +189,8 @@ async def memory_profile():
         status_code=status.HTTP_200_OK,
         content={
             "message": "Enhanced memory profile",
-            "summary": json_summary[:50],  # Top 50 overall
-            "total_memory": total_memory,
+            "total_memory": muppy.get_size(all_objects),
+            "summary": json_summary[:20],  # Limit to top 20 objects
             "top_tracebacks": tracebacks,
             # New targeted analysis
             "http_related_objects": dict(sorted(http_objects.items(), key=lambda x: x[1]["size"], reverse=True)[:20]),
