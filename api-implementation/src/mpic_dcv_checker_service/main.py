@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 import sys
@@ -50,17 +51,20 @@ class MpicDcvCheckerService:
     async def shutdown(self):
         await self.dcv_checker.shutdown()
 
+    # noinspection PyUnresolvedReferences
     async def check_dcv(self, dcv_request: DcvCheckRequest):
-        result = await self.dcv_checker.check_dcv(dcv_request)
-        if result.errors is not None and len(result.errors) > 0:
-            if result.errors[0].error_type == "404":
-                status_code = status.HTTP_404_NOT_FOUND
-            else:
-                status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        async with logger.trace_timing("Remote DCV check processing"):
+            result = await self.dcv_checker.check_dcv(dcv_request)
+            logger.trace("DCV check result: %s", result.model_dump_json())
+            if result.errors is not None and len(result.errors) > 0:
+                if result.errors[0].error_type == "404":
+                    status_code = status.HTTP_404_NOT_FOUND
+                else:
+                    status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
 
-            result = JSONResponse(
-                status_code=status_code, content=result.model_dump()  # If you want to use 400 instead of 422
-            )
+                result = JSONResponse(
+                    status_code=status_code, content=result.model_dump()  # If you want to use 400 instead of 422
+                )
         return result
 
 
@@ -108,13 +112,10 @@ class PrettyJSONResponse(JSONResponse):
         ).encode("utf-8")
 
 
-# noinspection PyUnresolvedReferences
 @app.post("/dcv")
 async def perform_mpic(request: DcvCheckRequest):
-    async with logger.trace_timing("Remote DCV check processing"):
-        result = await get_service().check_dcv(request)
-        logger.trace("DCV check result: %s", result)
-        return result
+    result = await get_service().check_dcv(request)
+    return result
 
 
 @app.get("/healthz")
@@ -127,6 +128,7 @@ async def memory_profile():
     """
     Endpoint to check for memory leaks
     """
+    gc.collect()  # filter out garbage collected objects
     all_objects = muppy.get_objects()
 
     sum_objects = summary.summarize(all_objects)
@@ -137,7 +139,7 @@ async def memory_profile():
         if len(row) == 3:  # Ensure we have [type, count, size]
             json_summary.append({"type": str(row[0]), "count": row[1], "size": row[2]})  # Convert type to string
 
-    # Sort by size and limit to top 20
+    # Sort by size
     json_summary.sort(key=lambda x: x["size"], reverse=True)
 
     tracemalloc_snapshot = tracemalloc.take_snapshot()
@@ -146,10 +148,15 @@ async def memory_profile():
             tracemalloc.Filter(False, tracemalloc.__file__),
             tracemalloc.Filter(False, "muppy.py"),
             tracemalloc.Filter(False, "summary.py"),
+            tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
+            tracemalloc.Filter(False, "<frozen importlib._bootstrap_external>"),
+            tracemalloc.Filter(False, "<unknown>"),
         ]
     )
-    top_stats = filtered_snapshot.statistics("traceback")
-    tracebacks = [stat.traceback.format() for stat in top_stats[:20]]
+    top_tracebacks = filtered_snapshot.statistics("traceback")
+
+    # check filenames too
+    top_files = filtered_snapshot.statistics("filename")
 
     # Additional targeted analysis
     http_objects = {}
@@ -191,7 +198,8 @@ async def memory_profile():
             "message": "Enhanced memory profile",
             "total_memory": muppy.get_size(all_objects),
             "summary": json_summary[:20],  # Limit to top 20 objects
-            "top_tracebacks": tracebacks,
+            "top_tracebacks": [stat.traceback.format() for stat in top_tracebacks[:10]],  # Limit to top 10 tracebacks
+            "top_files": [stat.traceback.format() for stat in top_files[:3]],  # Limit to top 3 files
             # New targeted analysis
             "http_related_objects": dict(sorted(http_objects.items(), key=lambda x: x[1]["size"], reverse=True)[:20]),
             # Quick insights
