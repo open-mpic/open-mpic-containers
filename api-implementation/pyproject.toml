@@ -34,7 +34,7 @@ dependencies = [
     "starlette==0.46.2",
     "open-mpic-core @ git+https://github.com/open-mpic/open-mpic-core-python.git@ds-independent-http-clients",
 #    "open-mpic-core==5.10.0",
-    "aiohttp==3.12.13",
+    "aiohttp==3.12.14",
     "uvicorn>=0.34.3,<0.35.0",
     "black==25.1.0",
 ]
