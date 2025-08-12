@@ -41,9 +41,6 @@ class MpicDcvCheckerService:
             dns_resolution_lifetime=self.dns_resolution_lifetime_seconds,
         )
 
-    async def shutdown(self):
-        await self.dcv_checker.shutdown()
-
     async def check_dcv(self, dcv_request: DcvCheckRequest):
         result = await self.dcv_checker.check_dcv(dcv_request)
         if result.errors is not None and len(result.errors) > 0:
@@ -72,16 +69,7 @@ def get_service() -> MpicDcvCheckerService:
     return _service
 
 
-# noinspection PyUnusedLocal
-@asynccontextmanager
-async def lifespan(app_instance: FastAPI):
-    # Initialize services
-    service = get_service()
-    yield
-    await service.shutdown()
-
-
-app = FastAPI(lifespan=lifespan)
+app = FastAPI()
 
 
 # noinspection PyUnresolvedReferences
