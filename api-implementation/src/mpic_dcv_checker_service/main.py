@@ -36,7 +36,6 @@ class MpicDcvCheckerService:
 
         self.dcv_checker = MpicDcvChecker(
             http_client_timeout=self.http_client_timeout_seconds,
-            reuse_http_client=True,
             verify_ssl=self.verify_ssl,
             dns_timeout=self.dns_timeout_seconds,
             dns_resolution_lifetime=self.dns_resolution_lifetime_seconds,

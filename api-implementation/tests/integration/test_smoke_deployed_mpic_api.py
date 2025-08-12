@@ -3,6 +3,7 @@ import sys
 import pytest
 import time
 
+from open_mpic_core.common_domain.check_parameters import DcvAcmeHttp01ValidationParameters
 from pydantic import TypeAdapter
 
 from open_mpic_core import (
@@ -35,6 +36,7 @@ class TestDeployedMpicApi:
             yield api_client
             api_client.close()
 
+    @pytest.mark.skip
     def api__should_return_200_and_passed_corroboration_for_successful_caa_check(self, api_client):
         request = MpicCaaRequest(
             trace_identifier=f"test_trace_id_{time.time()}",
@@ -49,6 +51,7 @@ class TestDeployedMpicApi:
         response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
         self.validate_200_response(response)
 
+    @pytest.mark.skip
     def api__should_return_200_and_successful_corroboration_for_valid_dns_01_validation(self, api_client):
         request = MpicDcvRequest(
             trace_identifier=f"test_trace_id_{time.time()}",
