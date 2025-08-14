@@ -1,22 +1,13 @@
-# Start with any Python image that's not going to have memory leaks - it's just for bootstrapping Hatch
-FROM python:3.13-alpine3.22
+# Start with any Python image - it's just for bootstrapping Hatch
+FROM python:3.13
 
 # Arg for path to specific service to build
 ARG SERVICE_PATH
 
 RUN echo "building service from path: ${SERVICE_PATH}"
 
-# Dist/package upgrade (for python:3.13; doens't work for python:3.13-alpine)
-# RUN apt-get update && apt-get dist-upgrade -y
-
-# Dist/package upgrade (for python:3.13-alpine)
-RUN apk update
-
-# Alpine comes with sh instead of bash
-RUN apk add --no-cache bash
-
-# Install git (if building any dependencies from a git repository)
-RUN apk add --no-cache git
+# Dist/package upgrade
+RUN apt-get update && apt-get dist-upgrade -y
 
 # Install Hatch
 RUN pip install hatch
