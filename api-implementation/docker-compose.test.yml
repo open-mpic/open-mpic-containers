@@ -1,0 +1,47 @@
+services:
+  # The test web server that responds to DCV challenges.
+  test-server:
+    image: caddy:latest
+    volumes:
+      - ./test-server/www:/var/www/html:ro
+      - ./test-server/Caddyfile:/etc/caddy/Caddyfile:ro
+
+  # The load tester container that runs the 'hey' command.
+  load-tester:
+    image: williamyeh/hey:latest
+    # The command targets the dcv-service using its service name.
+    # The domain_or_ip_target points to the test-server.
+    command:
+      - -m
+      - POST
+      - -d
+      - '{"check_type": "dcv", "domain_or_ip_target": "test-server", "dcv_check_parameters": {"validation_method": "website-change", "http_token_path": "challenge.txt", "challenge_value": "EXPECTED_CHALLENGE_PAYLOAD", "url_scheme": "http"}}'
+      - -H
+      - "Content-Type: application/json"
+      - http://dcv-service:80/dcv
+
+    depends_on:
+      dcv-service:
+        condition: service_healthy
+      test-server:
+        condition: service_started
+
+  # The actual DCV service being tested.
+  dcv-service:
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import sys, urllib.request; sys.exit(0) if urllib.request.urlopen('http://localhost:80/healthz').status == 200 else sys.exit(1)",
+        ]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+      start_period: 2s
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        SERVICE_PATH: src/mpic_dcv_checker_service

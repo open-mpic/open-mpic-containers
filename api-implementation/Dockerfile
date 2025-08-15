@@ -31,6 +31,7 @@ COPY run_uvicorn.py /app/
 FROM gcr.io/distroless/python3-debian12
 WORKDIR /app
 
+
 # Copy application and deps from builder
 COPY --from=builder /app /app
 

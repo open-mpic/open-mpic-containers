@@ -46,8 +46,13 @@ class MpicDcvCheckerService:
         await self.dcv_checker.shutdown()
 
     async def check_dcv(self, dcv_request: DcvCheckRequest):
+        logger.info(f"DCV request: {dcv_request.model_dump_json(indent=2)}")
         result = await self.dcv_checker.check_dcv(dcv_request)
         if result.errors is not None and len(result.errors) > 0:
+            logger.error(f"DCV check errors: {result.errors}")
+            # Try to log the URL if present in details
+            if hasattr(result, "details") and result.details:
+                logger.error(f"DCV check details: {result.details}")
             if result.errors[0].error_type == "404":
                 status_code = status.HTTP_404_NOT_FOUND
             else:
