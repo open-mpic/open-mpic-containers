@@ -7,7 +7,7 @@ MPIC CAA Checker
 ```bash
 docker build -t mpiccaachecker . --build-arg SERVICE_PATH=src/mpic_caa_checker_service --progress=plain
 ```
-MPIC CAA Checker
+MPIC DCV Checker
 ```bash
 docker build -t mpicdcvchecker . --build-arg SERVICE_PATH=src/mpic_dcv_checker_service --progress=plain
 ```
