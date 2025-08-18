@@ -40,6 +40,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+load-test = [
+    "matplotlib",
+    "pandas",
+]
 test = [
     "pytest==8.2.2",
     "pytest-cov==5.0.0",

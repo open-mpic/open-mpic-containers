@@ -1,3 +1,10 @@
+# Install Python plotting dependencies if not already installed
+
+# Ensure load-test dependencies are installed using Hatch
+.PHONY: deps
+deps:
+	hatch env create load-test || hatch env update load-test
+
 # Makefile for orchestrating Docker-based integration and load tests.
 
 DCV_COMPOSE_FILE := docker-compose.dcv-load-test.yml
@@ -35,7 +42,7 @@ test-debug:
 
 # Create Report
 .PHONY: report
-report:
+report: deps
 	@echo "--- Generating text report from results... ---"
 	vegeta report --type=text < $(TESTDIR)/output/results.bin | tee $(TESTDIR)/output/vegeta-report.txt
 	@echo "--- Generating JSON report from results... ---"
