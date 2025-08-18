@@ -1,9 +1,9 @@
 # Install Python plotting dependencies if not already installed
 
-# Ensure load-test dependencies are installed using Hatch
+# Ensure load-test dependencies are installed with pip
 .PHONY: deps
 deps:
-	hatch env create load-test || hatch env update load-test
+	pip install .[load-test]
 
 # Makefile for orchestrating Docker-based integration and load tests.
 
