@@ -39,6 +39,9 @@ COPY --from=builder /app /app
 ENV PYTHONPATH=/app/deps
 ENV PYTHONUNBUFFERED=1
 
+# Use a safe, non-root user (Chainguard images provide 'nonroot' user)
+USER nonroot
+
 # Expose port 80 for HTTP
 EXPOSE 80
 # Run with the hardened python3 executable
