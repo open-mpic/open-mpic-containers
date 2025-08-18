@@ -1,6 +1,6 @@
 # --- Builder stage ---
-# Use Python 3.11 so compiled extension wheels are compatible with the distroless final image (python3)
-FROM python:3.11-slim AS builder
+# Use Python 3.13 so compiled extension wheels are compatible with the hardened final image (python3)
+FROM python:3.13-slim AS builder
 
 # Arg for path to specific service to build
 ARG SERVICE_PATH
@@ -27,8 +27,8 @@ RUN mkdir -p /app/config
 COPY uvicorn_config.yaml /app/config/
 COPY run_uvicorn.py /app/
 
-# --- Final stage: distroless ---
-FROM gcr.io/distroless/python3-debian12
+# --- Final stage: hardened python ---
+FROM cgr.dev/chainguard/python:latest
 WORKDIR /app
 
 
@@ -41,5 +41,5 @@ ENV PYTHONUNBUFFERED=1
 
 # Expose port 80 for HTTP
 EXPOSE 80
-# Run with the distroless python3 executable
+# Run with the hardened python3 executable
 ENTRYPOINT ["python3", "/app/run_uvicorn.py"]
