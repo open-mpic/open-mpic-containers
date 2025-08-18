@@ -29,7 +29,7 @@ jobs:
         run: |
           set -e
           LATEST=$(curl -s https://api.github.com/repos/tsenart/vegeta/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-          FILENAME="vegeta-${LATEST}-linux-amd64.tar.gz"
+          FILENAME="vegeta_${LATEST}_linux-amd64.tar.gz"
           wget "https://github.com/tsenart/vegeta/releases/download/${LATEST}/${FILENAME}"
           tar -xzf "${FILENAME}"
           sudo mv vegeta /usr/local/bin/
