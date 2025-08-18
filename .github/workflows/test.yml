@@ -1,0 +1,54 @@
+name: Load Test
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, ah-distroless]
+  pull_request:
+    branches: [main, ah-distroless]
+
+jobs:
+  load-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api-implementation
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Download latest Vegeta
+        run: |
+          set -e
+          LATEST=$(curl -s https://api.github.com/repos/tsenart/vegeta/releases/latest | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+          FILENAME="vegeta-${LATEST}-linux-amd64.tar.gz"
+          wget "https://github.com/tsenart/vegeta/releases/download/${LATEST}/${FILENAME}"
+          tar -xzf "${FILENAME}"
+          sudo mv vegeta /usr/local/bin/
+
+      - name: Build Load Test Docker images
+        run: make build
+
+      - name: Run load test
+        run: make test
+
+      - name: Generate report and plot
+        run: make report
+
+      - name: Add vegeta text report and plot to job summary
+        if: always()
+        run: |
+          echo '## Vegeta Text Report' >> $GITHUB_STEP_SUMMARY
+          echo '\n\n```' >> $GITHUB_STEP_SUMMARY
+          cat ./load-tests/dcv-http-01/output/vegeta-report.txt >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "\n## Latency Timeseries Plot" >> $GITHUB_STEP_SUMMARY
+          echo '![](./load-tests/dcv-http-01/output/latency-timeseries-plot.png)' >> $GITHUB_STEP_SUMMARY

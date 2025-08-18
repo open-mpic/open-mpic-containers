@@ -5,7 +5,7 @@ DOCKER_COMPOSE := docker compose
 DCV_SERVICE_NAME := dcv-service
 TEST_SERVER_HOSTNAME := test-server
 TESTDIR := load-tests/dcv-http-01
-TITLE := "DCV-HTTP-01 Latency"
+TITLE := DCV-HTTP-01 Latency
 
 .PHONY: all
 
@@ -37,13 +37,19 @@ test-debug:
 .PHONY: report
 report:
 	@echo "--- Generating text report from results... ---"
-	vegeta report --type=text < $(TESTDIR)/output/results.bin
+	vegeta report --type=text < $(TESTDIR)/output/results.bin | tee $(TESTDIR)/output/vegeta-report.txt
 	@echo "--- Generating JSON report from results... ---"
 	vegeta encode $(TESTDIR)/output/results.bin > $(TESTDIR)/output/results.jsonl
 	@echo "--- Report generation complete. Check results.json for details. ---"
 	@echo "--- Generating latency timeseries plot... ---"
 	./load-tests/chart.py --testdir $(TESTDIR) --title "$(TITLE)"
 	@echo "--- Plot saved as $(TESTDIR)/output/latency-timeseries-plot.png ---"
+	@if [ -n "$$GITHUB_STEP_SUMMARY" ]; then \
+	  echo '## Vegeta Text Report' >> $$GITHUB_STEP_SUMMARY; \
+	  echo '\n\n```' >> $$GITHUB_STEP_SUMMARY; \
+	  cat $(TESTDIR)/output/vegeta-report.txt >> $$GITHUB_STEP_SUMMARY; \
+	  echo '```' >> $$GITHUB_STEP_SUMMARY; \
+	fi
 
 .PHONY: clean
 clean:
