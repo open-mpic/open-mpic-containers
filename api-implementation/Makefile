@@ -51,12 +51,6 @@ report: deps
 	@echo "--- Generating latency timeseries plot... ---"
 	./load-tests/chart.py --testdir $(TESTDIR) --title "$(TITLE)"
 	@echo "--- Plot saved as $(TESTDIR)/output/latency-timeseries-plot.png ---"
-	@if [ -n "$$GITHUB_STEP_SUMMARY" ]; then \
-	  echo '## Vegeta Text Report' >> $$GITHUB_STEP_SUMMARY; \
-	  echo '\n\n```' >> $$GITHUB_STEP_SUMMARY; \
-	  cat $(TESTDIR)/output/vegeta-report.txt >> $$GITHUB_STEP_SUMMARY; \
-	  echo '```' >> $$GITHUB_STEP_SUMMARY; \
-	fi
 
 .PHONY: clean
 clean:
