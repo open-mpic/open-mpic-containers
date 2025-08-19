@@ -46,7 +46,7 @@ jobs:
       - name: Add vegeta text report to job summary
         if: always()
         run: |
-          echo "## Vegeta Text Report" >> $GITHUB_STEP_SUMMARY
-          echo -e "\n\n```" >> $GITHUB_STEP_SUMMARY
+          echo "## Vegeta Text Report - DCV-HTTP-01" >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
           cat ./load-tests/dcv-http-01/output/vegeta-report.txt >> $GITHUB_STEP_SUMMARY
-          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "```" >> $GITHUB_STEP_SUMMARY
