@@ -43,15 +43,8 @@ jobs:
       - name: Generate report and plot
         run: make report
 
-      # - name: List output directory for debugging
-      #   if: always()
-      #   run: |
-      #     echo "Listing contents of ./load-tests/dcv-http-01/output before summary step:"
-      #     ls -l ./load-tests/dcv-http-01/output
-      #     cat ./load-tests/dcv-http-01/output/vegeta-report.txt
-
       - name: Add vegeta text report to job summary
         if: always()
         run: |
           echo "## Vegeta Text Report - DCV-HTTP-01" >> $GITHUB_STEP_SUMMARY
-          echo test >> $GITHUB_STEP_SUMMARY
+          echo "$(<load-tests/dcv-http-01/output/vegeta-report.txt)" >> $GITHUB_STEP_SUMMARY
