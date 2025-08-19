@@ -55,5 +55,5 @@ jobs:
         run: |
           echo "## Vegeta Text Report - DCV-HTTP-01" >> $GITHUB_STEP_SUMMARY
           echo "```" >> $GITHUB_STEP_SUMMARY
-          cat ./load-tests/dcv-http-01/output/vegeta-report.txt >> $GITHUB_STEP_SUMMARY
+          echo "$(<load-tests/dcv-http-01/output/vegeta-report.txt)" >> $GITHUB_STEP_SUMMARY
           echo "```" >> $GITHUB_STEP_SUMMARY
