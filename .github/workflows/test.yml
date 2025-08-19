@@ -48,6 +48,7 @@ jobs:
         run: |
           echo "Listing contents of ./load-tests/dcv-http-01/output before summary step:"
           ls -l ./load-tests/dcv-http-01/output
+          cat ./load-tests/dcv-http-01/output/vegeta-report.txt
 
       - name: Add vegeta text report to job summary
         if: always()
