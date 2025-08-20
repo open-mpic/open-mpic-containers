@@ -69,18 +69,16 @@ async def perform_mpic(request: DcvCheckRequest):
     async with logger.trace_timing("Remote DCV check processing"):
         result = await get_service().check_dcv(request)
         logger.trace(f"DCV check result: {result}")
-        
+
         # Check if there are errors and return appropriate status code
         if result.errors is not None and len(result.errors) > 0:
             if result.errors[0].error_type == "404":
                 status_code = status.HTTP_404_NOT_FOUND
             else:
                 status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
-            
-            return JSONResponse(
-                status_code=status_code, content=result.model_dump()
-            )
-        
+
+            return JSONResponse(status_code=status_code, content=result.model_dump())
+
         return result
 
 
