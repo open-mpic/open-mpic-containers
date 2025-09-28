@@ -1,0 +1,1 @@
+{"check_type": "dcv", "domain_or_ip_target": "test-server", "dcv_check_parameters": {"validation_method": "website-change", "http_token_path": "challenge.txt", "challenge_value": "EXPECTED_CHALLENGE_PAYLOAD", "url_scheme": "http"}}
