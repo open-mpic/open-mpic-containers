@@ -137,23 +137,23 @@ configs:
       verify_ssl=False
       http_client_timeout_seconds=5
       dns_timeout_seconds=1
-      dns_lifetime_resolution_seconds=2
+      dns_resolution_lifetime_seconds=2
   dcv_config_2:
     content: |
       verify_ssl=False
       http_client_timeout_seconds=5
       dns_timeout_seconds=1
-      dns_lifetime_resolution_seconds=2
+      dns_resolution_lifetime_seconds=2
   caa_config_1:
     content: |
       default_caa_domains="example.com|example.org"
       dns_timeout_seconds=1
-      dns_lifetime_resolution_seconds=2
+      dns_resolution_lifetime_seconds=2
   caa_config_2:
     content: |
       default_caa_domains="example.com|example.org"
       dns_timeout_seconds=1
-      dns_lifetime_resolution_seconds=2
+      dns_resolution_lifetime_seconds=2
   coordinator_config:
     content: |
       perspectives={"example-region-1":{"caa_endpoint_info":{"url":"http://caa_checker_1:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_1:80/dcv"}},"example-region-2":{"caa_endpoint_info":{"url":"http://caa_checker_2:80/caa"},"dcv_endpoint_info":{"url":"http://dcv_checker_2:80/dcv"}}}
