@@ -2,6 +2,9 @@ import json
 import sys
 import pytest
 import time
+
+from open_mpic_core.common_domain.check_parameters import DcvDnsPersistentValidationParameters
+from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicDcvResponse
 from pydantic import TypeAdapter
 
 from open_mpic_core import CaaCheckParameters, DcvWebsiteChangeValidationParameters, PerspectiveResponse
@@ -56,6 +59,23 @@ class TestDeployedMpicApi:
             len(list(filter(lambda perspective: perspective.check_response.check_type == CheckType.CAA, perspectives)))
             == request.orchestration_parameters.perspective_count
         )
+
+    def api_should_support_persistent_dns_validation_method(self, api_client):
+        request = MpicDcvRequest(
+            trace_identifier=f"test_trace_id_{time.time()}",
+            domain_or_ip_target="dns-persist.integration-testing.open-mpic.org",
+            orchestration_parameters=MpicRequestOrchestrationParameters(perspective_count=2, quorum_count=2),
+            dcv_check_parameters=DcvDnsPersistentValidationParameters(
+                issuer_domain_names=["example-ca.example.com"],
+                expected_account_uri="https://example-ca.example.com/acct/123",
+            ),
+        )
+        print("\nRequest:\n", json.dumps(request.model_dump(), indent=4))  # pretty print request body
+        response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
+        print("\nResponse:\n", json.dumps(json.loads(response.text), indent=4))  # pretty print response body
+        assert response.status_code == 200
+        mpic_response: MpicDcvResponse = self.mpic_response_adapter.validate_json(response.text)
+        assert mpic_response.is_valid is True
 
     @pytest.mark.skip(reason="working on getting the first test to pass")
     def api_should_return_200_and_failed_corroboration_given_failed_dcv_check(self, api_client):

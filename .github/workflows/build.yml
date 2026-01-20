@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: psf/black@stable
+      - uses: psf/black@25.1.0
         with:
           options: "--check --verbose --line-length 120"
           src: "api-implementation/src"
