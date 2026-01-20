@@ -132,5 +132,3 @@ class TestDeployedMpicApi:
         response_body = json.loads(response.text)
         print("\nResponse:\n", json.dumps(response_body, indent=4))
         assert response_body["error"] == MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key
-
-
