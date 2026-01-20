@@ -2,6 +2,8 @@ import json
 import sys
 import pytest
 import time
+
+from open_mpic_core.common_domain.check_parameters import DcvDnsPersistentValidationParameters
 from pydantic import TypeAdapter
 
 from open_mpic_core import CaaCheckParameters, DcvWebsiteChangeValidationParameters, PerspectiveResponse
@@ -57,6 +59,26 @@ class TestDeployedMpicApi:
             == request.orchestration_parameters.perspective_count
         )
 
+    def api_should_support_persistent_dns_validation_method(self, api_client):
+        request = MpicDcvRequest(
+            trace_identifier=f"test_trace_id_{time.time()}",
+            domain_or_ip_target="dns-persist.integration-testing.open-mpic.org",
+            orchestration_parameters=MpicRequestOrchestrationParameters(perspective_count=2, quorum_count=2),
+            dcv_check_parameters=DcvDnsPersistentValidationParameters(
+                issuer_domain_names=["example-ca.example.com"],
+                expected_account_uri="https://example-ca.example.com/acct/123",
+            ),
+        )
+        print("\nRequest:\n", json.dumps(request.model_dump(), indent=4))  # pretty print request body
+        response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
+        print("\nResponse:\n", json.dumps(json.loads(response.text), indent=4))  # pretty print response body
+        assert response.status_code == 200
+        mpic_response: MpicCaaResponse = self.mpic_response_adapter.validate_json(response.text)
+        perspectives: list[PerspectiveResponse] = mpic_response.perspectives
+        assert mpic_response.is_valid is True
+        assert mpic_response.domain_or_ip_target == request.domain_or_ip_target
+        assert len(perspectives) == request.orchestration_parameters.perspective_count
+
     @pytest.mark.skip(reason="working on getting the first test to pass")
     def api_should_return_200_and_failed_corroboration_given_failed_dcv_check(self, api_client):
         request = MpicDcvRequest(
@@ -110,3 +132,5 @@ class TestDeployedMpicApi:
         response_body = json.loads(response.text)
         print("\nResponse:\n", json.dumps(response_body, indent=4))
         assert response_body["error"] == MpicRequestValidationMessages.REQUEST_VALIDATION_FAILED.key
+
+
