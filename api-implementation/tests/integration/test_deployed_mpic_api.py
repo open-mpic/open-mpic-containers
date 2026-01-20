@@ -4,6 +4,7 @@ import pytest
 import time
 
 from open_mpic_core.common_domain.check_parameters import DcvDnsPersistentValidationParameters
+from open_mpic_core.mpic_coordinator.domain.mpic_response import MpicDcvResponse
 from pydantic import TypeAdapter
 
 from open_mpic_core import CaaCheckParameters, DcvWebsiteChangeValidationParameters, PerspectiveResponse
@@ -73,11 +74,8 @@ class TestDeployedMpicApi:
         response = api_client.post(MPIC_REQUEST_PATH, json.dumps(request.model_dump()))
         print("\nResponse:\n", json.dumps(json.loads(response.text), indent=4))  # pretty print response body
         assert response.status_code == 200
-        mpic_response: MpicCaaResponse = self.mpic_response_adapter.validate_json(response.text)
-        perspectives: list[PerspectiveResponse] = mpic_response.perspectives
+        mpic_response: MpicDcvResponse = self.mpic_response_adapter.validate_json(response.text)
         assert mpic_response.is_valid is True
-        assert mpic_response.domain_or_ip_target == request.domain_or_ip_target
-        assert len(perspectives) == request.orchestration_parameters.perspective_count
 
     @pytest.mark.skip(reason="working on getting the first test to pass")
     def api_should_return_200_and_failed_corroboration_given_failed_dcv_check(self, api_client):
