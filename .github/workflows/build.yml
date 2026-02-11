@@ -82,17 +82,17 @@ jobs:
         run: echo "PYTHON_VERSION=$(cat api-implementation/src/mpic_${{ matrix.service }}_service/.python-version)" >> $GITHUB_OUTPUT
         # the variable is now available as $PYTHON_VERSION
 
+      - name: Print `yq` version
+        run: |
+          yq --version
+
       - name: Get Open MPIC Core version
         id: openMpicCoreVersion
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq -oy '.project.dependencies.[] | select(test("^open-mpic-core")) | split("==")[1]' api-implementation/pyproject.toml
+        run: printf "result=$(yq -oy '.project.dependencies.[] | select(test("^open-mpic-core")) | split("==")[1]' api-implementation/pyproject.toml)" >> $GITHUB_OUTPUT
 
       - name: Get Open MPIC Spec Version
         id: openMpicSpecVersion
-        uses: mikefarah/yq@master
-        with:
-          cmd: yq -oy '.tool.api.spec_version' api-implementation/pyproject.toml
+        run: printf "result=$(yq -oy '.tool.api.spec_version' api-implementation/pyproject.toml)" >> $GITHUB_OUTPUT
 
       - name: Prepare image description
         id: image-desc
