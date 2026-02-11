@@ -32,7 +32,7 @@ dependencies = [
     "pydantic==2.11.7",
     "fastapi[standard]>=0.120.1,<0.121.0",
     "starlette==0.49.1",
-    "open-mpic-core==6.3.0",
+    "open-mpic-core==6.3.2",
     "aiohttp==3.13.3",
     "uvicorn>=0.34.3,<0.35.0",
     "black==25.1.0",
