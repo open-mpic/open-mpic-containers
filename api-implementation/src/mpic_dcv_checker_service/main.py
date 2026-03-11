@@ -2,7 +2,6 @@ import os
 import tomllib
 import importlib.metadata
 
-from contextlib import asynccontextmanager
 from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, status

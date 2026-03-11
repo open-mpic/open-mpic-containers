@@ -67,7 +67,7 @@ class TestMpicDcvCheckerService:
     ):
         mock_dcv_response = TestMpicDcvCheckerService.create_dcv_check_response()
         mock_dcv_response.check_passed = False
-        mock_dcv_response.errors = [(MpicValidationError(error_type=error_type, error_message=error_message))]
+        mock_dcv_response.errors = [MpicValidationError(error_type=error_type, error_message=error_message)]
 
         awaitable_mock_response = AsyncMock(return_value=mock_dcv_response)
         mocker.patch("open_mpic_core.MpicDcvChecker.check_dcv", new=awaitable_mock_response)

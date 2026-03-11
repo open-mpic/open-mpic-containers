@@ -3,7 +3,6 @@ import sys
 import pytest
 import time
 
-from open_mpic_core.common_domain.check_parameters import DcvAcmeHttp01ValidationParameters
 from pydantic import TypeAdapter
 
 from open_mpic_core import (
@@ -15,7 +14,6 @@ from open_mpic_core import MpicCaaRequest, MpicDcvRequest, MpicResponse
 from open_mpic_core import MpicRequestOrchestrationParameters
 
 import testing_api_client
-
 
 MPIC_REQUEST_PATH = "mpic"
 
@@ -53,7 +51,7 @@ class TestDeployedMpicApi:
     def api__should_return_200_and_successful_corroboration_for_valid_dns_01_validation(self, api_client):
         request = MpicDcvRequest(
             trace_identifier=f"test_trace_id_{time.time()}",
-            domain_or_ip_target='dns-01.integration-testing.open-mpic.org',
+            domain_or_ip_target="dns-01.integration-testing.open-mpic.org",
             orchestration_parameters=MpicRequestOrchestrationParameters(perspective_count=2, quorum_count=2),
             dcv_check_parameters=DcvAcmeDns01ValidationParameters(
                 key_authorization_hash="7FwkJPsKf-TH54wu4eiIFA3nhzYaevsL7953ihy-tpo"

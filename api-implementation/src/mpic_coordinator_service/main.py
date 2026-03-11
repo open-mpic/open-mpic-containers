@@ -22,7 +22,6 @@ from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
 from open_mpic_core import RemotePerspective
 from open_mpic_core import get_logger
 
-
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
 logger = get_logger(__name__)
