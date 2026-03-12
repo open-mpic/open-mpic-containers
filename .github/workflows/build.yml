@@ -152,7 +152,7 @@ jobs:
           file: api-implementation/Dockerfile
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ env.TEST_TAG }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ env.TEST_TAG }}
           format: "table"
@@ -275,7 +275,7 @@ jobs:
           file: unbound/Dockerfile
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound:${{ env.TEST_TAG }}
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@0.35.0
         with:
           image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound:${{ env.TEST_TAG }}
           format: "table"
