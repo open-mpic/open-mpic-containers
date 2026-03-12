@@ -38,10 +38,13 @@ FROM python:${PYTHON_VERSION}
 # Upgrade OS packages and install runtime dependencies only
 RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y --no-install-recommends \
     ca-certificates \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && pip install --upgrade pip setuptools wheel
 
-# Upgrade system Python packaging tools to pick up any security fixes
-RUN pip install --upgrade pip setuptools wheel
+# Note: System Python's pip/setuptools/wheel are upgraded to satisfy Trivy's vulnerability
+# scanning, though the venv's versions (upgraded in the builder stage) take precedence at
+# runtime via PATH=/venv/bin:$PATH. This ensures Trivy passes while keeping the active
+# runtime clean.
 
 # Set the working directory
 WORKDIR /app
