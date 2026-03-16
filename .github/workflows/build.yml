@@ -1,6 +1,13 @@
 name: Container Image Build
 on:
-  push:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - closed
 
   # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
@@ -14,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: psf/black@26.3.0
+      - uses: psf/black@26.3.1
         with:
           options: "--check --verbose --line-length 120"
           src: "api-implementation/src"
@@ -25,14 +32,19 @@ jobs:
       branch-name: ${{ steps.branch-name.outputs.BRANCH_NAME }}
       timestamp: ${{ steps.timestamp.outputs.TIMESTAMP }}
       legacy-timestamp: ${{ steps.legacy-timestamp.outputs.LEGACY-TIMESTAMP }}
+      is-main-merge: ${{ steps.build-context.outputs.IS_MAIN_MERGE }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Generate sanitized branch name for tag
         id: branch-name
-        # This step generates a sanitized branch name for tagging the Docker image. It replaces hyphens with dots in the branch name.
-        run: echo "BRANCH_NAME=${GITHUB_REF_NAME//-/.}" >> "$GITHUB_OUTPUT"
+        # Use PR head ref for pull_request events and sanitize for use as an image tag.
+        run: |
+          RAW_BRANCH="${{ github.head_ref || github.ref_name }}"
+          SANITIZED_BRANCH="${RAW_BRANCH//\//.}"
+          SANITIZED_BRANCH="${SANITIZED_BRANCH//-/.}"
+          echo "BRANCH_NAME=${SANITIZED_BRANCH}" >> "$GITHUB_OUTPUT"
 
       - name: Generate legacy-timestamp format in shared output for synchronization with matrix
         id: legacy-timestamp
@@ -44,6 +56,18 @@ jobs:
         # This step generates a timestamp in ISO 8601-1:2019 format for tagging the Docker image.
         run: echo "TIMESTAMP=$(date -u +'%Y%m%dT%H%M%SZ')" >> "$GITHUB_OUTPUT"
 
+      - name: Detect merge build context
+        id: build-context
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ] \
+            && [ "${{ github.event.action }}" = "closed" ] \
+            && [ "${{ github.event.pull_request.merged }}" = "true" ] \
+            && [ "${{ github.event.pull_request.base.ref }}" = "main" ]; then
+            echo "IS_MAIN_MERGE=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "IS_MAIN_MERGE=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Tags Summary
         run: |
           echo '### Generated Image Tags 📦' >> $GITHUB_STEP_SUMMARY
@@ -51,6 +75,7 @@ jobs:
           echo "- Branch Name: ${{ steps.branch-name.outputs.BRANCH_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "- Timestamp: ${{ steps.timestamp.outputs.TIMESTAMP }}" >> $GITHUB_STEP_SUMMARY
           echo "- Legacy Timestamp: ${{ steps.legacy-timestamp.outputs.LEGACY-TIMESTAMP }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Is merge build on main: ${{ steps.build-context.outputs.IS_MAIN_MERGE }}" >> $GITHUB_STEP_SUMMARY
 
   Image-Build:
     runs-on: ubuntu-latest
@@ -341,3 +366,66 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
+
+  Draft-Release-On-Main:
+    name: Draft release on merge to main
+    runs-on: ubuntu-latest
+    needs: [shared-tags, Image-Build, Image-Build-Unbound]
+    if: needs.shared-tags.outputs.is-main-merge == 'true'
+    permissions:
+      contents: write
+    steps:
+      - name: Determine next semantic release (minor bump)
+        id: semver
+        run: |
+          # Fetch latest release tag via GitHub CLI. If no release is detected use v0.0.0.
+          if LATEST_RELEASE_TAG=$(gh release view --json tagName --template '{{.tagName}}' 2>/dev/null); then
+            :
+          else
+            LATEST_RELEASE_TAG="v0.0.0"
+          fi
+
+          NEXT_TAG=$(scripts/semver.sh bump-minor "$LATEST_RELEASE_TAG")
+          NORMALIZED_LATEST=$(scripts/semver.sh parse "$LATEST_RELEASE_TAG" | awk -F= '/^normalized=/{print $2}')
+          NEXT_VERSION=$(scripts/semver.sh parse "$NEXT_TAG" | awk -F= '/^normalized=/{print $2}')
+
+          echo "latest-tag=${LATEST_RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "latest-version=${NORMALIZED_LATEST}" >> "$GITHUB_OUTPUT"
+          echo "next-version=${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "next-tag=${NEXT_TAG}" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Build draft release notes body
+        id: notes
+        run: |
+          ISO_TAG="${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}"
+
+          cat > draft-release-notes.md <<EOF
+          ## Shared Tags summary
+
+          - Branch Name: ${{ needs.shared-tags.outputs.branch-name }}
+          - Timestamp (ISO 8601-1:2019 basic): ${{ needs.shared-tags.outputs.timestamp }}
+          - Legacy Timestamp: ${{ needs.shared-tags.outputs.legacy-timestamp }}
+          - ISO format image tag: ${ISO_TAG}
+          - Previous semantic release: ${{ steps.semver.outputs.latest-tag }}
+          - Next semantic release (minor bump): ${{ steps.semver.outputs.next-tag }}
+
+          ## Built images (ISO format tag)
+
+          - [ghcr.io/${{ github.repository_owner }}/coordinator:${ISO_TAG}](https://ghcr.io/${{ github.repository_owner }}/coordinator:${ISO_TAG})
+          - [ghcr.io/${{ github.repository_owner }}/dcv_checker:${ISO_TAG}](https://ghcr.io/${{ github.repository_owner }}/dcv_checker:${ISO_TAG})
+          - [ghcr.io/${{ github.repository_owner }}/caa_checker:${ISO_TAG}](https://ghcr.io/${{ github.repository_owner }}/caa_checker:${ISO_TAG})
+          - [ghcr.io/${{ github.repository_owner }}/unbound:${ISO_TAG}](https://ghcr.io/${{ github.repository_owner }}/unbound:${ISO_TAG})
+          EOF
+
+          echo "iso-tag=${ISO_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          tag_name: ${{ steps.semver.outputs.next-tag }}
+          target_commitish: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
+          name: ${{ steps.semver.outputs.next-tag }}
+          body_path: draft-release-notes.md
