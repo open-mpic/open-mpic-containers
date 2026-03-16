@@ -375,7 +375,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Determine next semantic release (minor bump)
+      - name: Determine next semantic release (label-driven, default patch)
         id: semver
         run: |
           # Fetch latest release tag via GitHub CLI. If no release is detected use v0.0.0.
@@ -385,16 +385,27 @@ jobs:
             LATEST_RELEASE_TAG="v0.0.0"
           fi
 
-          NEXT_TAG=$(scripts/semver.sh bump-minor "$LATEST_RELEASE_TAG")
-          NORMALIZED_LATEST=$(scripts/semver.sh parse "$LATEST_RELEASE_TAG" | awk -F= '/^normalized=/{print $2}')
-          NEXT_VERSION=$(scripts/semver.sh parse "$NEXT_TAG" | awk -F= '/^normalized=/{print $2}')
+          # Default release bump is patch. Labels can override this:
+          # - release:minor
+          # - release:major
+          # If multiple labels are present, highest precedence wins: major > minor > patch.
+          BUMP_KIND="patch"
+          if printf "%s" "$PR_LABELS" | grep -Eq '"release:major"'; then
+            BUMP_KIND="major"
+          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:minor"'; then
+            BUMP_KIND="minor"
+          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:patch"'; then
+            BUMP_KIND="patch"
+          fi
+
+          NEXT_TAG=$(scripts/semver.sh "bump-${BUMP_KIND}" "$LATEST_RELEASE_TAG")
 
           echo "latest-tag=${LATEST_RELEASE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "latest-version=${NORMALIZED_LATEST}" >> "$GITHUB_OUTPUT"
-          echo "next-version=${NEXT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "bump-kind=${BUMP_KIND}" >> "$GITHUB_OUTPUT"
           echo "next-tag=${NEXT_TAG}" >> "$GITHUB_OUTPUT"
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
 
       - name: Build draft release notes body
         id: notes
@@ -408,8 +419,6 @@ jobs:
           - Timestamp (ISO 8601-1:2019 basic): ${{ needs.shared-tags.outputs.timestamp }}
           - Legacy Timestamp: ${{ needs.shared-tags.outputs.legacy-timestamp }}
           - ISO format image tag: ${ISO_TAG}
-          - Previous semantic release: ${{ steps.semver.outputs.latest-tag }}
-          - Next semantic release (minor bump): ${{ steps.semver.outputs.next-tag }}
 
           ## Built images (ISO format tag)
 

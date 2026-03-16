@@ -1,16 +1,19 @@
 # open-mpic-containers
+
 Implements a FastAPI wrapper for Open MPIC using Docker.
 Built on [open-mpic-core-python](https://github.com/open-mpic/open-mpic-core-python).
 
 Includes various deployment configurations, including:
- - AWS EC2
- - Local Docker Compose
- - Local Kubernetes
 
-# Architecture
+- AWS EC2
+- Local Docker Compose
+- Local Kubernetes
+
+## Architecture
 
 Open MPIC Containers implements a REST API interface to implement the Open MPIC API and uses REST API calls to communicate with remote perspectives.
 The repository contains three containers:
+
 - Coordinator: Terminates Open MPIC API calls per the Open MPIC API spec, selects remote perspectives from a list of available perspectives, and sends REST API calls to those perspectives.
 - DCV Checker: Terminates REST API calls for DCV checks and performs the checks. This container implements a single remote DCV perspective.
 - CAA Checker: Terminates REST API calls for CAA checks and performs the checks. This container implements a single remote CAA perspective.
@@ -22,9 +25,10 @@ Different deployments (see deployment examples) will wrap deploy these container
 ### Configuration Parameters for Coordinator
 
 The Coordinator service is configured through multiple configuration files.
-* An `app.conf` file specific to the Coordinator specifies certain operating parameters.
-* A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
-* A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
+
+- An `app.conf` file specific to the Coordinator specifies certain operating parameters.
+- A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
+- A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
 
 The `log_config.yaml` and `uvicorn_config.yaml` files can be reused across all services in the repository.
 
@@ -40,7 +44,8 @@ The `log_config.yaml` and `uvicorn_config.yaml` files can be reused across all s
     `available_perspectives.yaml` (see below).
 
     The structure is as follows:
-```
+
+```sh
     "perspectives": {
         "perspective_code_1": {
             "caa_endpoint_info": {
@@ -60,7 +65,7 @@ The `log_config.yaml` and `uvicorn_config.yaml` files can be reused across all s
 
     **Required**. The number of perspectives to use for each check.
     (There is no default because the minimum required for a valid check will change over time.)
-    This can be overridden by the `perspective_count` parameter in individual requests. 
+    This can be overridden by the `perspective_count` parameter in individual requests.
 
     Example:
     > `default_perspective_count=3`
@@ -87,13 +92,13 @@ The `log_config.yaml` and `uvicorn_config.yaml` files can be reused across all s
     Optional. Total timeout in seconds for HTTP client requests made by the Coordinator service.
     The default is 300 seconds, which is built into the aiohttp library used by the service.
     These requests are made to the CAA and DCV checker services.
-    
+
     Example:
     > `http_client_timeout_seconds=30`
 
-- **http_client_keepalive_timeout_seconds** 
-    
-    Optional. Timeout in seconds for HTTP connection reuse after releasing. 
+- **http_client_keepalive_timeout_seconds**
+
+    Optional. Timeout in seconds for HTTP connection reuse after releasing.
     The default is 15 seconds, which is built into the aiohttp library used by the service.
 
     **Note**: this should not exceed (there's no point) the `timeout_keep_alive` parameter in the Uvicorn configuration used for the checkers.
@@ -104,11 +109,13 @@ The `log_config.yaml` and `uvicorn_config.yaml` files can be reused across all s
 ### Configuration for CAA Checker
 
 The CAA Checker service is configured through multiple configuration files.
-* An `app.conf` file specific to CAA checkers specifies certain operating parameters.
-* A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
-* A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
+
+- An `app.conf` file specific to CAA checkers specifies certain operating parameters.
+- A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
+- A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
 
 #### Parameters available in `config.yaml`
+
 - **default_caa_domains**
 
     **Required.**
@@ -138,16 +145,18 @@ The CAA Checker service is configured through multiple configuration files.
 #### Configuration Parameters for DCV Checker
 
 The DCV Checker service is configured through multiple configuration files.
-* An `app.conf` file specific to DCV checkers specifies certain operating parameters.
-* A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
-* A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
+
+- An `app.conf` file specific to DCV checkers specifies certain operating parameters.
+- A `log_config.yaml` file specifies the logging configuration (logging level, format, etc.).
+- A `uvicorn_config.yaml` file specifies the Uvicorn configuration for the service (connection timeouts, workers, etc.).
 
 #### Parameters available in `config.yaml`
+
 - **verify_ssl**
 
     Optional. Whether to verify SSL certificates when making HTTPS requests.
     The default is `True`, which means SSL certificates will be verified.
-    
+
     Example:
     > `verify_ssl=False`
 
@@ -175,6 +184,7 @@ The DCV Checker service is configured through multiple configuration files.
     > `dns_resolution_lifetime_seconds=6`
 
 ### available_perspectives.yaml
+
 Each deployment example utilizes an `available_perspectives.yaml` resource file in some form.
 
 This yaml file lists all the perspectives to which you are deploying your CAA and DCV checkers. It is consumed by
@@ -187,6 +197,7 @@ If this file is improperly configured, the coordinator cannot reliably enforce a
 and may return results that are not valid to allow issuance. Invalid RIR codes will result in a runtime error.
 
 List of valid RIR codes:
+
 - ARIN
 - RIPE NCC
 - APNIC
@@ -199,10 +210,10 @@ Modify the yaml file to add or remove perspectives as needed.
 
 It is recommended that the `available_perspectives.yaml` file be kept in sync with the perspectives configured in the
 `compose.yaml` file (i.e., the perspectives to which you have deployed a checker).
-You will not encounter errors if the yaml file defines extra perspectives to which you have not deployed a checker. 
+You will not encounter errors if the yaml file defines extra perspectives to which you have not deployed a checker.
 You will, however, encounter errors if the yaml file does not define all the perspectives to which you _have_ deployed a checker.
 
-Make sure the codes in the `available_perspectives.yaml` file correspond to the perspective codes used to specify CAA 
+Make sure the codes in the `available_perspectives.yaml` file correspond to the perspective codes used to specify CAA
 and DCV checker URLs in the `compose.yaml` file (as part of coordinator configuration).
 
 Check each of the **deployment examples** for other, deployment specific configuration files and how they should be treated.
@@ -212,16 +223,49 @@ Check each of the **deployment examples** for other, deployment specific configu
 The containers themselves **do not contain any authentication or terminate TLS**. The appropriate security model of these systems is left to the deploying CAs. To comply with the MPIC requirement of the CA/Browser Forum Baseline Requirements, **any production deployment must properly implement security**. Some example approaches are:
 
 - Transport encryption: Ensure containers are protected from any direct communication from the outside Internet and place containers behind a TLS-terminating reverse proxy (e.g., Nginx).
-- Caller authentication: Ensure presence of a secret authentication header (e.g., `x-api-key: ` or `Authorization: Bearer` header) on all client calls coming from the outside Internet.
+- Caller authentication: Ensure presence of a secret authentication header (e.g., `x-api-key:` or `Authorization: Bearer` header) on all client calls coming from the outside Internet.
 
 These particular techniques are utilized in the AWS EC2 deployment example.
 
-# Images
+## Images
 
 Images are auto built using a GitHub action. These are pushed to the GitHub Container Registry and may be used to pull in images in K8s, docker compose, etc... Instructions for manually building images are contained in `api-implementation/README.md`
 
-# Appendix: Devcontainers
-This repository contains a `.devcontainer` folder containing a `devcontainer.json` that can be used to develop open-mpic services. 
+## Release Process
+
+When a pull request is merged into the `main` branch, the CI workflow automatically:
+
+- Builds and pushes container images.
+- Computes the next semantic version tag (default: patch bump).
+- Creates a GitHub **draft release** with generated release notes and image links.
+
+Release bump label behavior:
+
+- Default (no release label): patch bump.
+- `release:patch`: patch bump.
+- `release:minor`: minor bump.
+- `release:major`: major bump.
+- If multiple release labels are present, precedence is: major > minor > patch.
+
+Recommended maintainer practice:
+
+- Add exactly one of `release:patch`, `release:minor`, or `release:major` before merge.
+
+Maintainer steps after merge:
+
+- Open the draft release in GitHub Releases.
+- Review and edit the title and release notes as needed.
+- Verify image tags and links.
+- Click **Publish release** when ready.
+
+Notes:
+
+- The release is intentionally created as a draft so maintainers can review and adjust content before publishing.
+- No extra CI step is required to create the draft; publishing is the final manual action.
+
+## Appendix: Devcontainers
+
+This repository contains a `.devcontainer` folder containing a `devcontainer.json` that can be used to develop open-mpic services.
 
 Refer to the [Visual Studio Code Remote - Containers](https://code.visualstudio.com/docs/remote/containers) documentation for more information on how to use devcontainers.
 
