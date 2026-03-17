@@ -233,11 +233,15 @@ Images are auto built using a GitHub action. These are pushed to the GitHub Cont
 
 ## Release Process
 
-When a pull request is merged into the `main` branch, the CI workflow automatically:
+Release version source of truth:
 
-- Builds and pushes container images.
-- Computes the next semantic version tag (default: patch bump).
-- Creates a GitHub **draft release** with generated release notes and image links.
+- The release version is the `version` field in `api-implementation/pyproject.toml`.
+- Developers must update this version in the PR before merge.
+
+Before merge, CI validates that the version in `api-implementation/pyproject.toml` matches the expected next release based on:
+
+- The latest GitHub release tag.
+- Release labels on the PR (default behavior below).
 
 Release bump label behavior:
 
@@ -247,9 +251,18 @@ Release bump label behavior:
 - `release:major`: major bump.
 - If multiple release labels are present, precedence is: major > minor > patch.
 
+If no release label is present, CI posts a reminder comment on the PR. This reminder is informational because patch is the default when no label is set.
+
+When a pull request is merged into the `main` branch, the CI workflow automatically:
+
+- Builds and pushes container images.
+- Creates a GitHub **draft release** whose tag matches `api-implementation/pyproject.toml`.
+- Includes generated release notes and image links.
+
 Recommended maintainer practice:
 
 - Add exactly one of `release:patch`, `release:minor`, or `release:major` before merge.
+- Ensure the PR updates `api-implementation/pyproject.toml` to the intended next release version.
 
 Maintainer steps after merge:
 

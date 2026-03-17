@@ -7,6 +7,8 @@ on:
       - opened
       - synchronize
       - reopened
+      - labeled
+      - unlabeled
       - closed
 
   # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
@@ -25,6 +27,102 @@ jobs:
         with:
           options: "--check --verbose --line-length 120"
           src: "api-implementation/src"
+
+  Validate-Release-Version:
+    name: Validate release version intent
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate pyproject version against release intent
+        id: validate-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -eu
+
+          if LATEST_RELEASE_TAG=$(gh release view --json tagName --template '{{.tagName}}' 2>/dev/null); then
+            :
+          else
+            LATEST_RELEASE_TAG="v0.0.0"
+          fi
+
+          PROJECT_VERSION=$(python -c "import pathlib, tomllib; p = pathlib.Path('api-implementation/pyproject.toml'); d = tomllib.loads(p.read_text(encoding='utf-8')); print(d['project']['version'])")
+          if [ -z "$PROJECT_VERSION" ]; then
+            echo "Unable to read project.version from api-implementation/pyproject.toml" >&2
+            exit 1
+          fi
+
+          BUMP_KIND="patch"
+          HAS_RELEASE_LABEL="false"
+          if printf "%s" "$PR_LABELS" | grep -Eq '"release:major"'; then
+            BUMP_KIND="major"
+            HAS_RELEASE_LABEL="true"
+          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:minor"'; then
+            BUMP_KIND="minor"
+            HAS_RELEASE_LABEL="true"
+          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:patch"'; then
+            BUMP_KIND="patch"
+            HAS_RELEASE_LABEL="true"
+          fi
+
+          EXPECTED_TAG=$(scripts/semver.sh "bump-${BUMP_KIND}" "$LATEST_RELEASE_TAG")
+          PROJECT_TAG=$(scripts/semver.sh parse "$PROJECT_VERSION" | awk -F= '/^tag=/{print $2}')
+
+          MATCHES_EXPECTED="false"
+          if [ "$PROJECT_TAG" = "$EXPECTED_TAG" ]; then
+            MATCHES_EXPECTED="true"
+          fi
+
+          echo "latest-tag=$LATEST_RELEASE_TAG" >> "$GITHUB_OUTPUT"
+          echo "bump-kind=$BUMP_KIND" >> "$GITHUB_OUTPUT"
+          echo "project-version=$PROJECT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "project-tag=$PROJECT_TAG" >> "$GITHUB_OUTPUT"
+          echo "expected-tag=$EXPECTED_TAG" >> "$GITHUB_OUTPUT"
+          echo "has-release-label=$HAS_RELEASE_LABEL" >> "$GITHUB_OUTPUT"
+          echo "matches-expected=$MATCHES_EXPECTED" >> "$GITHUB_OUTPUT"
+
+      - name: Upsert label reminder comment
+        if: steps.validate-version.outputs.has-release-label != 'true'
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ github.token }}
+          comment-tag: release-label-reminder
+          mode: upsert
+          message: |
+            Release label reminder: no release bump label is currently set.
+
+            Default behavior is patch when no label is present.
+            If this PR is intended to be a minor or major release, add one label before merge:
+            - `release:minor`
+            - `release:major`
+
+      - name: Delete label reminder comment
+        if: steps.validate-version.outputs.has-release-label == 'true'
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ github.token }}
+          comment-tag: release-label-reminder
+          mode: delete
+
+      - name: Enforce expected next version
+        if: steps.validate-version.outputs.matches-expected != 'true'
+        run: |
+          echo "Release version mismatch detected." >&2
+          echo "Latest release: ${{ steps.validate-version.outputs.latest-tag }}" >&2
+          echo "Release bump policy: ${{ steps.validate-version.outputs.bump-kind }}" >&2
+          echo "Expected next release tag: ${{ steps.validate-version.outputs.expected-tag }}" >&2
+          echo "Found project.version: ${{ steps.validate-version.outputs.project-version }} (${{ steps.validate-version.outputs.project-tag }})" >&2
+          echo "Update api-implementation/pyproject.toml [project].version or adjust release labels." >&2
+          exit 1
+
   shared-tags:
     name: Shared Tags
     runs-on: ubuntu-latest
@@ -384,37 +482,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Determine next semantic release (label-driven, default patch)
-        id: semver
+      - name: Read release version from pyproject
+        id: release-version
         run: |
-          # Fetch latest release tag via GitHub CLI. If no release is detected use v0.0.0.
-          if LATEST_RELEASE_TAG=$(gh release view --json tagName --template '{{.tagName}}' 2>/dev/null); then
-            :
-          else
-            LATEST_RELEASE_TAG="v0.0.0"
+          set -eu
+          PROJECT_VERSION=$(python -c "import pathlib, tomllib; p = pathlib.Path('api-implementation/pyproject.toml'); d = tomllib.loads(p.read_text(encoding='utf-8')); print(d['project']['version'])")
+          if [ -z "$PROJECT_VERSION" ]; then
+            echo "Unable to read project.version from api-implementation/pyproject.toml" >&2
+            exit 1
           fi
+          RELEASE_TAG=$(scripts/semver.sh parse "$PROJECT_VERSION" | awk -F= '/^tag=/{print $2}')
 
-          # Default release bump is patch. Labels can override this:
-          # - release:minor
-          # - release:major
-          # If multiple labels are present, highest precedence wins: major > minor > patch.
-          BUMP_KIND="patch"
-          if printf "%s" "$PR_LABELS" | grep -Eq '"release:major"'; then
-            BUMP_KIND="major"
-          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:minor"'; then
-            BUMP_KIND="minor"
-          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:patch"'; then
-            BUMP_KIND="patch"
-          fi
-
-          NEXT_TAG=$(scripts/semver.sh "bump-${BUMP_KIND}" "$LATEST_RELEASE_TAG")
-
-          echo "latest-tag=${LATEST_RELEASE_TAG}" >> "$GITHUB_OUTPUT"
-          echo "bump-kind=${BUMP_KIND}" >> "$GITHUB_OUTPUT"
-          echo "next-tag=${NEXT_TAG}" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+          echo "project-version=${PROJECT_VERSION}" >> "$GITHUB_OUTPUT"
+          echo "release-tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build draft release notes body
         id: notes
@@ -443,7 +523,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           draft: true
-          tag_name: ${{ steps.semver.outputs.next-tag }}
+          tag_name: ${{ steps.release-version.outputs.release-tag }}
           target_commitish: ${{ github.event.pull_request.merge_commit_sha || github.sha }}
-          name: ${{ steps.semver.outputs.next-tag }}
+          name: ${{ steps.release-version.outputs.release-tag }}
           body_path: draft-release-notes.md
