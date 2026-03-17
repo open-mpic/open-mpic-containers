@@ -1,106 +1,32 @@
-name: Container Image Build
+name: Merge Publish and Release
+
 on:
   pull_request:
     branches:
       - main
     types:
-      - opened
-      - synchronize
-      - reopened
-      - labeled
-      - unlabeled
       - closed
 
-  # Defines two custom environment variables for the workflow. These are used for the Container registry domain, and a name for the Docker image that this workflow builds.
 env:
   REGISTRY: ghcr.io
   TEST_TAG: test
   PYTHON_VERSION: "3.13"
 
 jobs:
-  Black-Format:
-    name: runner / black formatter
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: psf/black@26.3.1
-        with:
-          options: "--check --verbose --line-length 120"
-          src: "api-implementation/src"
-
-  Validate-Release-Version:
-    name: Validate release version intent
-    if: github.event.action != 'closed'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      issues: write
-      pull-requests: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Validate pyproject version against release intent
-        id: validate-version
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
-        run: |
-          set -eu
-
-          while IFS='=' read -r key value; do
-            echo "$key=$value" >> "$GITHUB_OUTPUT"
-          done < <(bash scripts/release-version-intent.sh validate-intent api-implementation/pyproject.toml "$PR_LABELS")
-
-      - name: Upsert label reminder comment
-        if: steps.validate-version.outputs.has-release-label != 'true'
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          github-token: ${{ github.token }}
-          comment-tag: release-label-reminder
-          mode: upsert
-          message: |
-            Release label reminder: no release bump label is currently set.
-
-            Default behavior is patch when no label is present.
-            If this PR is intended to be a minor or major release, add one label before merge:
-            - `release:minor`
-            - `release:major`
-
-      - name: Delete label reminder comment
-        if: steps.validate-version.outputs.has-release-label == 'true'
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          github-token: ${{ github.token }}
-          comment-tag: release-label-reminder
-          mode: delete
-
-      - name: Enforce expected next version
-        if: steps.validate-version.outputs.matches-expected != 'true'
-        run: |
-          echo "Release version mismatch detected." >&2
-          echo "Latest release: ${{ steps.validate-version.outputs.latest-tag }}" >&2
-          echo "Release bump policy: ${{ steps.validate-version.outputs.bump-kind }}" >&2
-          echo "Expected next release tag: ${{ steps.validate-version.outputs.expected-tag }}" >&2
-          echo "Found project.version: ${{ steps.validate-version.outputs.project-version }} (${{ steps.validate-version.outputs.project-tag }})" >&2
-          echo "Update api-implementation/pyproject.toml [project].version or adjust release labels." >&2
-          exit 1
-
   shared-tags:
     name: Shared Tags
+    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     outputs:
       branch-name: ${{ steps.branch-name.outputs.BRANCH_NAME }}
       timestamp: ${{ steps.timestamp.outputs.TIMESTAMP }}
       legacy-timestamp: ${{ steps.legacy-timestamp.outputs.LEGACY-TIMESTAMP }}
-      is-main-merge: ${{ steps.build-context.outputs.IS_MAIN_MERGE }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Generate sanitized branch name for tag
         id: branch-name
-        # Use PR head ref for pull_request events and sanitize for use as an image tag.
         run: |
           RAW_BRANCH="${{ github.head_ref || github.ref_name }}"
           SANITIZED_BRANCH="${RAW_BRANCH//\//.}"
@@ -109,39 +35,23 @@ jobs:
 
       - name: Generate legacy-timestamp format in shared output for synchronization with matrix
         id: legacy-timestamp
-        # This is to support existing tags that are already in the legacy format. It generates a timestamp in a legacy format for tagging the Docker images.
         run: echo "LEGACY-TIMESTAMP=$(date -u +'%Y%m%d-%H%M%S')" >> "$GITHUB_OUTPUT"
 
       - name: Generate timestamp for tag in ISO 8601-1:2019 basic format
         id: timestamp
-        # This step generates a timestamp in ISO 8601-1:2019 format for tagging the Docker image.
         run: echo "TIMESTAMP=$(date -u +'%Y%m%dT%H%M%SZ')" >> "$GITHUB_OUTPUT"
-
-      - name: Detect merge build context
-        id: build-context
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ] \
-            && [ "${{ github.event.action }}" = "closed" ] \
-            && [ "${{ github.event.pull_request.merged }}" = "true" ] \
-            && [ "${{ github.event.pull_request.base.ref }}" = "main" ]; then
-            echo "IS_MAIN_MERGE=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "IS_MAIN_MERGE=false" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Tags Summary
         run: |
           echo '### Generated Image Tags 📦' >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY # this is a blank line
+          echo "" >> $GITHUB_STEP_SUMMARY
           echo "- Branch Name: ${{ steps.branch-name.outputs.BRANCH_NAME }}" >> $GITHUB_STEP_SUMMARY
           echo "- Timestamp: ${{ steps.timestamp.outputs.TIMESTAMP }}" >> $GITHUB_STEP_SUMMARY
           echo "- Legacy Timestamp: ${{ steps.legacy-timestamp.outputs.LEGACY-TIMESTAMP }}" >> $GITHUB_STEP_SUMMARY
-          echo "- Is merge build on main: ${{ steps.build-context.outputs.IS_MAIN_MERGE }}" >> $GITHUB_STEP_SUMMARY
 
   Image-Build:
     runs-on: ubuntu-latest
     needs: [shared-tags]
-    # Sets the permissions granted to the `GITHUB_TOKEN` for the actions in this job.
     permissions:
       contents: read
       packages: write
@@ -158,9 +68,7 @@ jobs:
       - name: Validate Python versions
         run: ./scripts/validate-python-versions.sh ${{ env.PYTHON_VERSION }}
 
-      # This step uses the `docker/login-action` action to log in to the Container registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
       - name: Authenticate to GitHub Container Registry
-        if: needs.shared-tags.outputs.is-main-merge == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -182,11 +90,9 @@ jobs:
       - name: Prepare image description
         id: image-desc
         run: |
-          # Keep the single-line description for Docker annotations
           DESCRIPTION="Open MPIC ${{ matrix.service }} service | Open Mpic Core Version: ${{ steps.openMpicCoreVersion.outputs.result }} | Open MPIC Spec Version: ${{ steps.openMpicSpecVersion.outputs.result }} | Built on: ${{ needs.shared-tags.outputs.timestamp }} | Branch: ${{ needs.shared-tags.outputs.branch-name }}"
           echo "DESC=$DESCRIPTION" >> $GITHUB_OUTPUT
 
-          # Add a nicely formatted description to the job summary
           echo "### 🐳 Image Description" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Service:** Open MPIC ${{ matrix.service }}" >> $GITHUB_STEP_SUMMARY
@@ -198,18 +104,14 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
 
-      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}
           tags: |
-            # set timestamp tag
             type=raw,value=${{ needs.shared-tags.outputs.legacy-timestamp }}
-            # set branch-timestamp tag
             type=raw,value=${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}
-            # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
           annotations: |
             org.opencontainers.image.description=${{ steps.image-desc.outputs.DESC }}
@@ -217,17 +119,12 @@ jobs:
           DOCKER_METADATA_ANNOTATIONS_LEVELS: manifest,index
           DOCKER_METADATA_SET_OUTPUT_ENV: true
 
-      # This step sets up QEMU for cross-platform builds.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # This step sets up Docker Buildx for multi-platform builds.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
-      # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
-      # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
       - name: Build and export to Docker
         uses: docker/build-push-action@v6
         with:
@@ -238,6 +135,7 @@ jobs:
             SERVICE_PATH=src/mpic_${{ matrix.service }}_service
           file: api-implementation/Dockerfile
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}:${{ env.TEST_TAG }}
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0
         with:
@@ -247,11 +145,12 @@ jobs:
           ignore-unfixed: true
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
+
       - name: Print labels
         run: echo "${{ steps.meta.outputs.labels }}"
+
       - name: Build and push image
         id: push
-        if: needs.shared-tags.outputs.is-main-merge == 'true'
         uses: docker/build-push-action@v6
         with:
           context: api-implementation
@@ -264,9 +163,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           annotations: ${{ steps.meta.outputs.annotations }}
 
-      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[Using artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)."
       - name: Generate artifact attestation
-        if: needs.shared-tags.outputs.is-main-merge == 'true'
         uses: actions/attest-build-provenance@v1
         with:
           subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ matrix.service }}
@@ -274,38 +171,28 @@ jobs:
           push-to-registry: true
 
       - name: Add container registry links to summary
-        if: needs.shared-tags.outputs.is-main-merge == 'true' && success() && steps.push.outcome == 'success'
+        if: success() && steps.push.outcome == 'success'
         id: package-id
         run: |
-          # Wait briefly for the package to be available in the API
           sleep 10
-
-          # Tag to find (use the branch-timestamp tag as it's unique)
           TAG="${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}"
 
-          # Try to get the package version ID first
           echo "Attempting to find exact package version ID..."
           RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/${{ matrix.service }}/versions")
 
-          # Parse the response to find the package version with our tag
           PACKAGE_VERSION_ID=$(echo "$RESPONSE" | jq -r '.[] | select(.metadata.container.tags[] | contains("'"$TAG"'")) | .id')
 
-          # Update the step summary with the appropriate links based on what we found
           echo "### 📦 Container Registry Links" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -n "$PACKAGE_VERSION_ID" ]; then
             echo "Found package version ID: $PACKAGE_VERSION_ID"
             echo "PACKAGE_VERSION_ID=$PACKAGE_VERSION_ID" >> $GITHUB_OUTPUT
-            
-            # Direct link with specific package version ID AND tag
             echo "- [📋 Package Version Link](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/${{ matrix.service }}/$PACKAGE_VERSION_ID?tag=$TAG)" >> $GITHUB_STEP_SUMMARY
           else
             echo "Note: Could not determine exact package version ID."
-            
-            # Add the main container page as fallback
             echo "- [📋 Container Registry](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/${{ matrix.service }})" >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -323,40 +210,30 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      # Uses the `docker/login-action` action to log in to the Container registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
+
       - name: Authenticate to GitHub Container Registry
-        if: needs.shared-tags.outputs.is-main-merge == 'true'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # This step uses [docker/metadata-action](https://github.com/docker/metadata-action#about) to extract tags and labels that will be applied to the specified image. The `id` "meta" allows the output of this step to be referenced in a subsequent step. The `images` value provides the base name for the tags and labels.
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound
           tags: |
-            # set timestamp tag
             type=raw,value=${{ needs.shared-tags.outputs.legacy-timestamp }}
-            # set branch-timestamp tag
             type=raw,value=${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}
-            # set latest tag for default branch
             type=raw,value=latest,enable={{is_default_branch}}
 
-      # This step sets up QEMU for cross-platform builds.
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 
-      # This step sets up Docker Buildx for multi-platform builds.
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-      # Built unbound image.
-      # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
-      # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
-      # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
+
       - name: Build and export to Docker
         uses: docker/build-push-action@v6
         with:
@@ -364,6 +241,7 @@ jobs:
           context: unbound
           file: unbound/Dockerfile
           tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound:${{ env.TEST_TAG }}
+
       - name: Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@0.35.0
         with:
@@ -376,7 +254,6 @@ jobs:
 
       - name: Build and push image
         id: push
-        if: needs.shared-tags.outputs.is-main-merge == 'true'
         uses: docker/build-push-action@v6
         with:
           context: unbound
@@ -386,9 +263,7 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[Using artifact attestations](https://docs.github.com/en/actions/security-for-github-actions/using-artifact-attestations)."
       - name: Generate artifact attestation
-        if: needs.shared-tags.outputs.is-main-merge == 'true'
         uses: actions/attest-build-provenance@v1
         with:
           subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound
@@ -396,38 +271,28 @@ jobs:
           push-to-registry: true
 
       - name: Add container registry links to summary
-        if: needs.shared-tags.outputs.is-main-merge == 'true' && success() && steps.push.outcome == 'success'
+        if: success() && steps.push.outcome == 'success'
         id: package-id
         run: |
-          # Wait briefly for the package to be available in the API
           sleep 10
-
-          # Tag to find (use the branch-timestamp tag as it's unique)
           TAG="${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}"
 
-          # Try to get the package version ID first
           echo "Attempting to find exact package version ID..."
           RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
             -H "Accept: application/vnd.github.v3+json" \
             "https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/unbound/versions")
 
-          # Parse the response to find the package version with our tag
           PACKAGE_VERSION_ID=$(echo "$RESPONSE" | jq -r '.[] | select(.metadata.container.tags[] | contains("'"$TAG"'")) | .id')
 
-          # Update the step summary with the appropriate links based on what we found
           echo "### 📦 Container Registry Links" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
           if [ -n "$PACKAGE_VERSION_ID" ]; then
             echo "Found package version ID: $PACKAGE_VERSION_ID"
             echo "PACKAGE_VERSION_ID=$PACKAGE_VERSION_ID" >> $GITHUB_OUTPUT
-            
-            # Direct link with specific package version ID AND tag
             echo "- [📋 Package Version Link](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/unbound/$PACKAGE_VERSION_ID?tag=$TAG)" >> $GITHUB_STEP_SUMMARY
           else
             echo "Note: Could not determine exact package version ID."
-            
-            # Add the main container page as fallback
             echo "- [📋 Container Registry](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/unbound)" >> $GITHUB_STEP_SUMMARY
           fi
 
@@ -438,7 +303,6 @@ jobs:
     name: Draft release on merge to main
     runs-on: ubuntu-latest
     needs: [shared-tags, Image-Build, Image-Build-Unbound]
-    if: needs.shared-tags.outputs.is-main-merge == 'true'
     permissions:
       contents: write
     steps:

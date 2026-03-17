@@ -1,0 +1,80 @@
+name: PR Validation
+
+on:
+  pull_request:
+    branches:
+      - main
+    types:
+      - opened
+      - synchronize
+      - reopened
+      - labeled
+      - unlabeled
+
+jobs:
+  Black-Format:
+    name: runner / black formatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: psf/black@26.3.1
+        with:
+          options: "--check --verbose --line-length 120"
+          src: "api-implementation/src"
+
+  Validate-Release-Version:
+    name: Validate release version intent
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate pyproject version against release intent
+        id: validate-version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -eu
+
+          while IFS='=' read -r key value; do
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done < <(bash scripts/release-version-intent.sh validate-intent api-implementation/pyproject.toml "$PR_LABELS")
+
+      - name: Upsert label reminder comment
+        if: steps.validate-version.outputs.has-release-label != 'true'
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ github.token }}
+          comment-tag: release-label-reminder
+          mode: upsert
+          message: |
+            Release label reminder: no release bump label is currently set.
+
+            Default behavior is patch when no label is present.
+            If this PR is intended to be a minor or major release, add one label before merge:
+            - `release:minor`
+            - `release:major`
+
+      - name: Delete label reminder comment
+        if: steps.validate-version.outputs.has-release-label == 'true'
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          github-token: ${{ github.token }}
+          comment-tag: release-label-reminder
+          mode: delete
+
+      - name: Enforce expected next version
+        if: steps.validate-version.outputs.matches-expected != 'true'
+        run: |
+          echo "Release version mismatch detected." >&2
+          echo "Latest release: ${{ steps.validate-version.outputs.latest-tag }}" >&2
+          echo "Release bump policy: ${{ steps.validate-version.outputs.bump-kind }}" >&2
+          echo "Expected next release tag: ${{ steps.validate-version.outputs.expected-tag }}" >&2
+          echo "Found project.version: ${{ steps.validate-version.outputs.project-version }} (${{ steps.validate-version.outputs.project-tag }})" >&2
+          echo "Update api-implementation/pyproject.toml [project].version or adjust release labels." >&2
+          exit 1
