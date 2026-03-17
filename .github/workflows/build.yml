@@ -48,46 +48,9 @@ jobs:
         run: |
           set -eu
 
-          if LATEST_RELEASE_TAG=$(gh release view --json tagName --template '{{.tagName}}' 2>/dev/null); then
-            :
-          else
-            LATEST_RELEASE_TAG="v0.0.0"
-          fi
-
-          PROJECT_VERSION=$(python -c "import pathlib, tomllib; p = pathlib.Path('api-implementation/pyproject.toml'); d = tomllib.loads(p.read_text(encoding='utf-8')); print(d['project']['version'])")
-          if [ -z "$PROJECT_VERSION" ]; then
-            echo "Unable to read project.version from api-implementation/pyproject.toml" >&2
-            exit 1
-          fi
-
-          BUMP_KIND="patch"
-          HAS_RELEASE_LABEL="false"
-          if printf "%s" "$PR_LABELS" | grep -Eq '"release:major"'; then
-            BUMP_KIND="major"
-            HAS_RELEASE_LABEL="true"
-          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:minor"'; then
-            BUMP_KIND="minor"
-            HAS_RELEASE_LABEL="true"
-          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:patch"'; then
-            BUMP_KIND="patch"
-            HAS_RELEASE_LABEL="true"
-          fi
-
-          EXPECTED_TAG=$(scripts/semver.sh "bump-${BUMP_KIND}" "$LATEST_RELEASE_TAG")
-          PROJECT_TAG=$(scripts/semver.sh parse "$PROJECT_VERSION" | awk -F= '/^tag=/{print $2}')
-
-          MATCHES_EXPECTED="false"
-          if [ "$PROJECT_TAG" = "$EXPECTED_TAG" ]; then
-            MATCHES_EXPECTED="true"
-          fi
-
-          echo "latest-tag=$LATEST_RELEASE_TAG" >> "$GITHUB_OUTPUT"
-          echo "bump-kind=$BUMP_KIND" >> "$GITHUB_OUTPUT"
-          echo "project-version=$PROJECT_VERSION" >> "$GITHUB_OUTPUT"
-          echo "project-tag=$PROJECT_TAG" >> "$GITHUB_OUTPUT"
-          echo "expected-tag=$EXPECTED_TAG" >> "$GITHUB_OUTPUT"
-          echo "has-release-label=$HAS_RELEASE_LABEL" >> "$GITHUB_OUTPUT"
-          echo "matches-expected=$MATCHES_EXPECTED" >> "$GITHUB_OUTPUT"
+          while IFS='=' read -r key value; do
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done < <(bash scripts/release-version-intent.sh validate-intent api-implementation/pyproject.toml "$PR_LABELS")
 
       - name: Upsert label reminder comment
         if: steps.validate-version.outputs.has-release-label != 'true'
@@ -486,15 +449,10 @@ jobs:
         id: release-version
         run: |
           set -eu
-          PROJECT_VERSION=$(python -c "import pathlib, tomllib; p = pathlib.Path('api-implementation/pyproject.toml'); d = tomllib.loads(p.read_text(encoding='utf-8')); print(d['project']['version'])")
-          if [ -z "$PROJECT_VERSION" ]; then
-            echo "Unable to read project.version from api-implementation/pyproject.toml" >&2
-            exit 1
-          fi
-          RELEASE_TAG=$(scripts/semver.sh parse "$PROJECT_VERSION" | awk -F= '/^tag=/{print $2}')
 
-          echo "project-version=${PROJECT_VERSION}" >> "$GITHUB_OUTPUT"
-          echo "release-tag=${RELEASE_TAG}" >> "$GITHUB_OUTPUT"
+          while IFS='=' read -r key value; do
+            echo "$key=$value" >> "$GITHUB_OUTPUT"
+          done < <(bash scripts/release-version-intent.sh project-tag api-implementation/pyproject.toml)
 
       - name: Build draft release notes body
         id: notes
