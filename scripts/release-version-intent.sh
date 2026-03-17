@@ -14,6 +14,14 @@ Commands:
 EOF
 }
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SEMVER_SCRIPT="${SCRIPT_DIR}/semver.sh"
+
+if [ ! -f "$SEMVER_SCRIPT" ]; then
+  echo "Unable to find semver helper at ${SEMVER_SCRIPT}" >&2
+  exit 1
+fi
+
 read_project_version() {
   local pyproject_path="$1"
   local python_cmd
@@ -30,11 +38,44 @@ read_project_version() {
   "$python_cmd" - "$pyproject_path" <<'PY'
 import pathlib
 import sys
-import tomllib
+
+try:
+    import tomllib as toml_loader
+except ModuleNotFoundError:
+    try:
+        import tomli as toml_loader
+    except ModuleNotFoundError:
+        print(
+            "Unable to parse TOML: need Python 3.11+ (tomllib) or installed tomli package",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
 
 path = pathlib.Path(sys.argv[1])
-data = tomllib.loads(path.read_text(encoding="utf-8"))
-print(data["project"]["version"])
+
+try:
+    raw_text = path.read_text(encoding="utf-8")
+except Exception as exc:
+    print(f"Unable to read TOML file {path}: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+
+try:
+    data = toml_loader.loads(raw_text)
+except Exception as exc:
+    print(f"Invalid TOML in {path}: {exc}", file=sys.stderr)
+    raise SystemExit(2)
+
+project = data.get("project")
+if not isinstance(project, dict):
+    print(f"Missing [project] table in {path}", file=sys.stderr)
+    raise SystemExit(2)
+
+version = project.get("version")
+if not isinstance(version, str) or not version.strip():
+    print(f"Missing [project].version in {path}", file=sys.stderr)
+    raise SystemExit(2)
+
+print(version.strip())
 PY
 }
 
@@ -43,7 +84,7 @@ project_tag_from_version() {
   local semver_parse_output
   local project_tag=""
 
-  semver_parse_output=$(sh scripts/semver.sh parse "$project_version")
+  semver_parse_output=$(sh "$SEMVER_SCRIPT" parse "$project_version")
 
   while IFS='=' read -r key value; do
     if [ "$key" = "tag" ]; then
@@ -116,7 +157,7 @@ case "$command" in
     bump_data=$(detect_bump_kind "$pr_labels_json")
     bump_kind="${bump_data%%,*}"
     has_release_label="${bump_data##*,}"
-    expected_tag=$(sh scripts/semver.sh "bump-${bump_kind}" "$release_tag")
+    expected_tag=$(sh "$SEMVER_SCRIPT" "bump-${bump_kind}" "$release_tag")
 
     matches_expected="false"
     if [ "$project_tag" = "$expected_tag" ]; then

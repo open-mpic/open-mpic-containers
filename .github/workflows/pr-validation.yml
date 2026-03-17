@@ -46,7 +46,7 @@ jobs:
           done < <(bash scripts/release-version-intent.sh validate-intent api-implementation/pyproject.toml "$PR_LABELS")
 
       - name: Upsert label reminder comment
-        if: steps.validate-version.outputs.has-release-label != 'true'
+        if: steps.validate-version.outputs.has-release-label != 'true' && github.event.pull_request.head.repo.fork == false
         uses: thollander/actions-comment-pull-request@v3
         with:
           github-token: ${{ github.token }}
@@ -61,7 +61,7 @@ jobs:
             - `release:major`
 
       - name: Delete label reminder comment
-        if: steps.validate-version.outputs.has-release-label == 'true'
+        if: steps.validate-version.outputs.has-release-label == 'true' && github.event.pull_request.head.repo.fork == false
         uses: thollander/actions-comment-pull-request@v3
         with:
           github-token: ${{ github.token }}
