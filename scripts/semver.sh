@@ -30,7 +30,7 @@ input="$2"
 
 normalized=$(printf "%s" "$input" | sed 's/^[vV]//')
 
-if ! printf "%s" "$normalized" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+if ! printf "%s" "$normalized" | grep -Eq '^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$'; then
   echo "Invalid semantic version: $input" >&2
   exit 1
 fi
