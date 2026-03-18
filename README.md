@@ -46,13 +46,15 @@ The `log_config.yaml` and `uvicorn_config.yaml` files can be reused across all s
     The structure is as follows:
 
 ```json
-    "perspectives": {
-        "perspective_code_1": {
-            "caa_endpoint_info": {
-                "url": "http://caa_checker_1_url:port/caa"
-            },
-            "dcv_endpoint_info": {
-                "url": "http://dcv_checker_1_url:port/dcv"
+    {
+        "perspectives": {
+            "perspective_code_1": {
+                "caa_endpoint_info": {
+                    "url": "http://caa_checker_1_url:port/caa"
+                },
+                "dcv_endpoint_info": {
+                    "url": "http://dcv_checker_1_url:port/dcv"
+                }
             }
         }
     }
