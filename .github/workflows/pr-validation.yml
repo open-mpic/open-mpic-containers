@@ -45,18 +45,19 @@ jobs:
             echo "$key=$value" >> "$GITHUB_OUTPUT"
           done < <(bash scripts/release-version-intent.sh validate-intent api-implementation/pyproject.toml "$PR_LABELS")
 
-      - name: Upsert label reminder comment
+      - name: Recreate label reminder comment
         if: steps.validate-version.outputs.has-release-label != 'true' && github.event.pull_request.head.repo.fork == false
         uses: thollander/actions-comment-pull-request@v3
         with:
           github-token: ${{ github.token }}
           comment-tag: release-label-reminder
-          mode: upsert
+          mode: recreate
           message: |
             Release label reminder: no release bump label is currently set.
 
             Default behavior is patch when no label is present.
-            If this PR is intended to be a minor or major release, add one label before merge:
+            If you want to be explicit, or if this PR is intended to be a minor or major release, add one label before merge:
+            - `release:patch`
             - `release:minor`
             - `release:major`
 
