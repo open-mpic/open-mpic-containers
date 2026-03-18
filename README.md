@@ -259,7 +259,7 @@ When a pull request is merged into the `main` branch, the CI workflow automatica
 
 - Builds and pushes container images.
 - Creates a GitHub **draft release** whose tag matches `api-implementation/pyproject.toml`.
-- Includes generated release notes and image links.
+- Includes draft release notes and image links.
 
 Recommended maintainer practice:
 
