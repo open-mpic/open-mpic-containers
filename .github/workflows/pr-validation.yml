@@ -53,13 +53,17 @@ jobs:
           comment-tag: release-label-reminder
           mode: recreate
           message: |
-            Release label reminder: no release bump label is currently set.
+            **Release label reminder** — no explicit release bump label is set.
 
-            Default behavior is patch when no label is present.
-            If you want to be explicit, or if this PR is intended to be a minor or major release, add one label before merge:
-            - `release:patch`
-            - `release:minor`
-            - `release:major`
+            Latest release: `${{ steps.validate-version.outputs.latest-tag }}`. Update `api-implementation/pyproject.toml` `[project].version` and add a label before merge:
+
+            | Label | Set `[project].version` to |
+            |-------|----------------------------|
+            | `release:patch` | `${{ steps.validate-version.outputs.expected-version-patch }}` |
+            | `release:minor` | `${{ steps.validate-version.outputs.expected-version-minor }}` |
+            | `release:major` | `${{ steps.validate-version.outputs.expected-version-major }}` |
+
+            If no label is set, `release:patch` is assumed and the version must still be updated.
 
       - name: Delete label reminder comment
         if: steps.validate-version.outputs.has-release-label == 'true' && github.event.pull_request.head.repo.fork == false
@@ -73,9 +77,11 @@ jobs:
         if: steps.validate-version.outputs.matches-expected != 'true'
         run: |
           echo "Release version mismatch detected." >&2
-          echo "Latest release: ${{ steps.validate-version.outputs.latest-tag }}" >&2
-          echo "Release bump policy: ${{ steps.validate-version.outputs.bump-kind }}" >&2
-          echo "Expected next release tag: ${{ steps.validate-version.outputs.expected-tag }}" >&2
-          echo "Found project.version: ${{ steps.validate-version.outputs.project-version }} (${{ steps.validate-version.outputs.project-tag }})" >&2
-          echo "Update api-implementation/pyproject.toml [project].version or adjust release labels." >&2
+          echo "  Latest release:     ${{ steps.validate-version.outputs.latest-tag }}" >&2
+          echo "  Bump policy:        ${{ steps.validate-version.outputs.bump-kind }}" >&2
+          echo "  Expected version:   ${{ steps.validate-version.outputs.expected-version }}" >&2
+          echo "  Found in pyproject: ${{ steps.validate-version.outputs.project-version }}" >&2
+          echo "" >&2
+          echo "Fix: set [project].version = \"${{ steps.validate-version.outputs.expected-version }}\" in api-implementation/pyproject.toml" >&2
+          echo "     and add a release:patch / release:minor / release:major label as appropriate." >&2
           exit 1

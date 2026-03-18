@@ -158,6 +158,9 @@ case "$command" in
     bump_kind="${bump_data%%,*}"
     has_release_label="${bump_data##*,}"
     expected_tag=$(sh "$SEMVER_SCRIPT" "bump-${bump_kind}" "$release_tag")
+    expected_tag_patch=$(sh "$SEMVER_SCRIPT" "bump-patch" "$release_tag")
+    expected_tag_minor=$(sh "$SEMVER_SCRIPT" "bump-minor" "$release_tag")
+    expected_tag_major=$(sh "$SEMVER_SCRIPT" "bump-major" "$release_tag")
 
     matches_expected="false"
     if [ "$project_tag" = "$expected_tag" ]; then
@@ -169,6 +172,10 @@ case "$command" in
     echo "project-version=$project_version"
     echo "project-tag=$project_tag"
     echo "expected-tag=$expected_tag"
+    echo "expected-version=${expected_tag#v}"
+    echo "expected-version-patch=${expected_tag_patch#v}"
+    echo "expected-version-minor=${expected_tag_minor#v}"
+    echo "expected-version-major=${expected_tag_major#v}"
     echo "has-release-label=$has_release_label"
     echo "matches-expected=$matches_expected"
     ;;
