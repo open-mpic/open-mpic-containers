@@ -33,8 +33,29 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Detect release decision label
+        id: decision-label
+        env:
+          PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
+        run: |
+          set -eu
+
+          has_no_release_label=false
+          has_decision_label=false
+
+          if printf "%s" "$PR_LABELS" | grep -Eq '"no-release"'; then
+            has_no_release_label=true
+            has_decision_label=true
+          elif printf "%s" "$PR_LABELS" | grep -Eq '"release:(patch|minor|major)"'; then
+            has_decision_label=true
+          fi
+
+          echo "has-no-release-label=${has_no_release_label}" >> "$GITHUB_OUTPUT"
+          echo "has-decision-label=${has_decision_label}" >> "$GITHUB_OUTPUT"
+
       - name: Validate pyproject version against release intent
         id: validate-version
+        if: steps.decision-label.outputs.has-no-release-label != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           PR_LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
@@ -46,27 +67,28 @@ jobs:
           done < <(bash scripts/release-version-intent.sh validate-intent api-implementation/pyproject.toml "$PR_LABELS")
 
       - name: Recreate label reminder comment
-        if: steps.validate-version.outputs.has-release-label != 'true' && github.event.pull_request.head.repo.fork == false
+        if: steps.decision-label.outputs.has-decision-label != 'true' && github.event.pull_request.head.repo.fork == false
         uses: thollander/actions-comment-pull-request@v3
         with:
           github-token: ${{ github.token }}
           comment-tag: release-label-reminder
           mode: recreate
           message: |
-            **Release label reminder** — no explicit release bump label is set.
+            **Release label reminder** — no explicit release decision label is set.
 
             Latest release: `${{ steps.validate-version.outputs.latest-tag }}`. Update `api-implementation/pyproject.toml` `[project].version` and add a label before merge:
 
-            | Label | Set `[project].version` to |
-            |-------|----------------------------|
+            | Label | Action |
+            |-------|--------|
             | `release:patch` | `${{ steps.validate-version.outputs.expected-version-patch }}` |
             | `release:minor` | `${{ steps.validate-version.outputs.expected-version-minor }}` |
             | `release:major` | `${{ steps.validate-version.outputs.expected-version-major }}` |
+            | `no-release` | No version bump required; skip image build/push and draft release |
 
             If no label is set, `release:patch` is assumed and the version must still be updated.
 
       - name: Delete label reminder comment
-        if: steps.validate-version.outputs.has-release-label == 'true' && github.event.pull_request.head.repo.fork == false
+        if: steps.decision-label.outputs.has-decision-label == 'true' && github.event.pull_request.head.repo.fork == false
         uses: thollander/actions-comment-pull-request@v3
         with:
           github-token: ${{ github.token }}
@@ -74,7 +96,7 @@ jobs:
           mode: delete
 
       - name: Enforce expected next version
-        if: steps.validate-version.outputs.matches-expected != 'true'
+        if: steps.decision-label.outputs.has-no-release-label != 'true' && steps.validate-version.outputs.matches-expected != 'true'
         run: |
           echo "Release version mismatch detected." >&2
           echo "  Latest release:     ${{ steps.validate-version.outputs.latest-tag }}" >&2

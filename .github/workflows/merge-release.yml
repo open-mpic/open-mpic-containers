@@ -15,7 +15,7 @@ env:
 jobs:
   shared-tags:
     name: Shared Tags
-    if: github.event.pull_request.merged == true
+    if: ${{ github.event.pull_request.merged == true && !contains(github.event.pull_request.labels.*.name, 'no-release') }}
     runs-on: ubuntu-latest
     outputs:
       branch-name: ${{ steps.branch-name.outputs.BRANCH_NAME }}

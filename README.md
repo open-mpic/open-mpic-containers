@@ -251,9 +251,12 @@ Release bump label behavior:
 - `release:patch`: patch bump.
 - `release:minor`: minor bump.
 - `release:major`: major bump.
+- `no-release`: no version bump required; skip release version validation, container image build/push, and draft release creation.
 - If multiple release labels are present, precedence is: major > minor > patch.
 
-If no release label is present, CI posts a reminder comment on the PR. This reminder is informational because patch is the default when no label is set.
+If no decision label is present, CI posts a reminder comment on the PR listing the release bump labels and `no-release`. This reminder is informational because patch is the default when no label is set.
+
+If `no-release` is present, it overrides the release bump labels and disables release automation for that PR.
 
 When a pull request is merged into the `main` branch, the CI workflow automatically:
 
@@ -261,9 +264,11 @@ When a pull request is merged into the `main` branch, the CI workflow automatica
 - Creates a GitHub **draft release** whose tag matches `api-implementation/pyproject.toml`.
 - Includes draft release notes and image links.
 
+Pull requests labeled `no-release` skip that merge automation entirely.
+
 Recommended maintainer practice:
 
-- Add exactly one of `release:patch`, `release:minor`, or `release:major` before merge.
+- Add exactly one of `release:patch`, `release:minor`, `release:major`, or `no-release` before merge.
 - Ensure the PR updates `api-implementation/pyproject.toml` to the intended next release version.
 
 Maintainer steps after merge:
