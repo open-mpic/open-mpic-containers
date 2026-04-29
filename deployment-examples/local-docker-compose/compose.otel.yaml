@@ -1,0 +1,140 @@
+# OpenTelemetry observability stack overlay for local development.
+#
+# Usage:
+#   docker compose -f compose.example.yaml -f compose.otel.yaml up
+#
+# Or with locally-built images:
+#   docker compose -f compose.build.example.yaml -f compose.otel.yaml up
+#
+# Adds to every MPIC service:
+#   - OTEL_EXPORTER_OTLP_ENDPOINT pointing at the local collector
+#   - OTEL_SERVICE_NAME for Grafana service attribution
+#
+# Backends exposed on the host:
+#   Grafana     http://localhost:3000   (admin / admin)
+#   Prometheus  http://localhost:9090
+#   Tempo       http://localhost:3200
+#   Loki        http://localhost:3100
+#   OTEL Collector gRPC  :4317
+#   OTEL Collector HTTP  :4318
+
+name: open-mpic
+
+services:
+  # ── MPIC service telemetry wiring ─────────────────────────────────────────
+
+  coordinator:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: mpic-coordinator
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
+    depends_on:
+      - otel-collector
+
+  dcv_checker_1:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: mpic-dcv-checker
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,perspective.slot=1
+    depends_on:
+      - otel-collector
+
+  dcv_checker_2:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: mpic-dcv-checker
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,perspective.slot=2
+    depends_on:
+      - otel-collector
+
+  caa_checker_1:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: mpic-caa-checker
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,perspective.slot=1
+    depends_on:
+      - otel-collector
+
+  caa_checker_2:
+    environment:
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_SERVICE_NAME: mpic-caa-checker
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,perspective.slot=2
+    depends_on:
+      - otel-collector
+
+  # ── Observability backends ─────────────────────────────────────────────────
+
+  # Upgrade Traefik to fix Docker socket compatibility with Docker Desktop on macOS
+  traefik:
+    image: traefik:v2.11
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.102.0
+    command: [ "--config=/etc/otel-collector/config.yaml" ]
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otel-collector/config.yaml:ro
+    ports:
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8889:8889" # Prometheus scrape endpoint
+    environment:
+      GOGC: "80"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+
+  prometheus:
+    image: prom/prometheus:v2.52.0
+    command:
+      - --config.file=/etc/prometheus/prometheus.yaml
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle
+    volumes:
+      - ./prometheus/prometheus.yaml:/etc/prometheus/prometheus.yaml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+
+  tempo:
+    image: grafana/tempo:2.5.0
+    command: [ "-config.file=/etc/tempo/tempo.yaml" ]
+    volumes:
+      - ./tempo/tempo.yaml:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "3200:3200" # Tempo HTTP API / Grafana datasource
+      - "4418:4418" # OTLP HTTP receiver (collector sends here)
+
+  loki:
+    image: grafana/loki:3.1.0
+    command: [ "-config.file=/etc/loki/loki-config.yaml" ]
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "3100:3100"
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+      - tempo
+      - loki
+
+volumes:
+  prometheus-data:
+  tempo-data:
+  loki-data:
+  grafana-data:

@@ -1,11 +1,12 @@
-import os
+import importlib.metadata
 import json
+import logging
+import os
+import tomllib
 import traceback
 
-import tomllib
-import importlib.metadata
-import yaml
 import aiohttp
+import yaml
 
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
@@ -13,6 +14,20 @@ from pathlib import Path
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
+from opentelemetry import trace, metrics
+from opentelemetry._logs import set_logger_provider
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.propagate import inject
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_VERSION
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from pydantic import TypeAdapter, BaseModel, Field
 from open_mpic_core import MpicRequest, MpicResponse
 from open_mpic_core import MpicRequestValidationException, MpicRequestValidationMessages
@@ -22,8 +37,62 @@ from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
 from open_mpic_core import RemotePerspective
 from open_mpic_core import get_logger
 
+def _setup_telemetry(service_name: str) -> None:
+    """Initialize OpenTelemetry SDK providers for metrics, traces, and logs.
+
+    Reads the following environment variables (all optional):
+      OTEL_SDK_DISABLED           - Set 'true' to skip setup entirely (default: false)
+      OTEL_SERVICE_NAME           - Service name reported to backends (overrides service_name arg)
+      OTEL_EXPORTER_OTLP_ENDPOINT - Base URL for OTLP HTTP export
+                                    (default: http://otel-collector:4318; read by exporters automatically)
+      OTEL_RESOURCE_ATTRIBUTES    - Extra resource labels, e.g. deployment.environment=dev
+    """
+    if os.environ.get("OTEL_SDK_DISABLED", "false").lower() == "true":
+        return
+
+    try:
+        core_version = importlib.metadata.version("open-mpic-core")
+    except importlib.metadata.PackageNotFoundError:
+        core_version = "unknown"
+
+    resource = Resource.create(
+        {
+            SERVICE_NAME: os.environ.get("OTEL_SERVICE_NAME", service_name),
+            SERVICE_VERSION: core_version,
+        }
+    )
+
+    tracer_provider = TracerProvider(resource=resource)
+    tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    trace.set_tracer_provider(tracer_provider)
+
+    reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+    meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+    metrics.set_meter_provider(meter_provider)
+
+    logger_provider = LoggerProvider(resource=resource)
+    logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+    set_logger_provider(logger_provider)
+    logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+
+
+def _shutdown_telemetry() -> None:
+    """Flush buffered telemetry and shut down SDK providers."""
+    for provider in (trace.get_tracer_provider(), metrics.get_meter_provider()):
+        if hasattr(provider, "shutdown"):
+            provider.shutdown()
+
+
+def _otel_propagation_headers() -> dict[str, str]:
+    """Return W3C trace-context headers for the current active span (empty dict when no SDK)."""
+    headers: dict[str, str] = {}
+    inject(headers)
+    return headers
+
+
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
+load_dotenv(config_path)
 logger = get_logger(__name__)
 
 
@@ -39,8 +108,6 @@ class PerspectiveEndpoints(BaseModel):
 
 class MpicCoordinatorService:
     def __init__(self):
-        load_dotenv(config_path)
-
         # load environment variables
         perspectives_json = os.environ["perspectives"]
         perspectives = {
@@ -152,7 +219,9 @@ class MpicCoordinatorService:
         ]
 
         async with self._async_http_client.post(
-            url=endpoint_info.url, headers=endpoint_info.headers, json=check_request.model_dump()
+            url=endpoint_info.url,
+            headers={**dict(endpoint_info.headers or {}), **_otel_propagation_headers()},
+            json=check_request.model_dump(),
         ) as response:
             text = await response.text()
             return self.check_response_adapter.validate_json(text)
@@ -178,6 +247,9 @@ def get_service() -> MpicCoordinatorService:
 # noinspection PyUnusedLocal
 @asynccontextmanager
 async def lifespan(app_instance: FastAPI):
+    # Initialize telemetry before service so instruments are created against real providers
+    _setup_telemetry("mpic-coordinator")
+
     # Initialize services
     service = get_service()
     await service.initialize()
@@ -186,9 +258,11 @@ async def lifespan(app_instance: FastAPI):
 
     # Cleanup
     await service.shutdown()
+    _shutdown_telemetry()
 
 
 app = FastAPI(lifespan=lifespan)
+FastAPIInstrumentor.instrument_app(app)
 
 
 # noinspection PyUnusedLocal
