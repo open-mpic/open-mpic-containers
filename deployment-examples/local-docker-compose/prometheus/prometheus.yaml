@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: mpic
+    scrape_interval: 15s
+    static_configs:
+      - targets: [ "otel-collector:8889" ]
+    # The collector prometheus exporter prefixes metrics with the configured namespace.
+    # All mpic.* metrics will appear as mpic_* in Prometheus after normalization.

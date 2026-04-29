@@ -1,0 +1,58 @@
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  batch:
+    send_batch_size: 1024
+    timeout: 10s
+
+exporters:
+  # Metrics: expose a Prometheus scrape endpoint so Prometheus can pull
+  prometheus:
+    endpoint: "0.0.0.0:8889"
+    namespace: mpic
+    send_timestamps: true
+    metric_expiration: 3m
+
+  # Traces: forward to Tempo via OTLP HTTP
+  otlphttp/tempo:
+    endpoint: http://tempo:4418
+    tls:
+      insecure: true
+
+  # Logs: forward to Loki via its native OTLP endpoint (Loki >= 2.9)
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+    tls:
+      insecure: true
+
+service:
+  extensions: [ health_check ]
+  pipelines:
+    metrics:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ prometheus ]
+
+    traces:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ otlphttp/tempo ]
+
+    logs:
+      receivers: [ otlp ]
+      processors: [ memory_limiter, batch ]
+      exporters: [ otlphttp/loki ]

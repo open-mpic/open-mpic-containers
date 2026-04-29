@@ -1,0 +1,124 @@
+{
+  "title": "MPIC Overview",
+  "uid": "mpic-overview",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "tags": ["mpic"],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total MPIC Requests",
+      "gridPos": { "x": 0, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } },
+      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\"})", "legendFormat": "Requests" }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Valid MPIC Requests",
+      "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } },
+      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"})", "legendFormat": "200 OK" }]
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "Invalid MPIC Requests",
+      "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } } },
+      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=~\"4..|5..\"})", "legendFormat": "4xx/5xx" }]
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Coordinator 4xx/5xx",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }] } } },
+      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=~\"4..|5..\"})", "legendFormat": "errors" }]
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Avg Coordinator Duration (ms)",
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 500 }, { "color": "red", "value": 2000 }] } } },
+      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_sum{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}) / sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"})", "legendFormat": "avg ms" }]
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Request Rate by Status",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "sum by (http_status_code) (rate(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\"}[1m]))", "legendFormat": "status={{http_status_code}}" }
+      ]
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "Coordinator P50 / P95 / P99 Latency (ms)",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p99" }
+      ]
+    },
+    {
+      "id": 8,
+      "type": "timeseries",
+      "title": "Checker Request Rate",
+      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "sum by (exported_job,http_target,http_status_code) (rate(mpic_http_server_duration_milliseconds_count{exported_job=~\"mpic-(caa|dcv)-checker\"}[1m]))", "legendFormat": "{{exported_job}} {{http_target}} {{http_status_code}}" }
+      ]
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "CAA/DCV Duration (ms)",
+      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-caa-checker\",http_target=\"/caa\"}[5m])))", "legendFormat": "caa p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-caa-checker\",http_target=\"/caa\"}[5m])))", "legendFormat": "caa p95" },
+        { "expr": "histogram_quantile(0.50, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-dcv-checker\",http_target=\"/dcv\"}[5m])))", "legendFormat": "dcv p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-dcv-checker\",http_target=\"/dcv\"}[5m])))", "legendFormat": "dcv p95" }
+      ]
+    },
+    {
+      "id": 10,
+      "type": "logs",
+      "title": "Service Logs",
+      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "options": { "dedupStrategy": "none", "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true },
+      "targets": [{ "expr": "{}", "legendFormat": "" }]
+    }
+  ]
+}
