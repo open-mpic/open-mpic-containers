@@ -5,6 +5,11 @@ deployment-examples/local-docker-compose/compose.yaml
 deployment-examples/amazon-ec2/config.yaml
 deployment-examples/*/*generated.tf
 
+# Local development overrides — never commit these
+deployment-examples/local-docker-compose/compose.local-core.yaml
+deployment-examples/local-docker-compose/.env.local
+.env.local
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

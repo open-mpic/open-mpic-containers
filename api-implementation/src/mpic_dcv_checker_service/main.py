@@ -1,3 +1,4 @@
+import logging
 import os
 from contextlib import asynccontextmanager
 
@@ -5,9 +6,71 @@ from pathlib import Path
 from dotenv import load_dotenv
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
+from opentelemetry import trace, metrics
+from opentelemetry._logs import set_logger_provider
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
+from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
+from opentelemetry.sdk.metrics import MeterProvider
+from opentelemetry.sdk.metrics.export import PeriodicExportingMetricReader
+from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_VERSION
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.exporter.otlp.proto.http._log_exporter import OTLPLogExporter
+from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExporter
+from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from open_mpic_core import DcvCheckRequest
 from open_mpic_core import MpicDcvChecker
 from open_mpic_core import get_logger
+
+
+def _setup_telemetry(service_name: str) -> None:
+    """Initialize OpenTelemetry SDK providers for metrics, traces, and logs.
+
+    Reads the following environment variables (all optional):
+      OTEL_SDK_DISABLED           - Set 'true' to skip setup entirely (default: false)
+      OTEL_SERVICE_NAME           - Service name reported to backends (overrides service_name arg)
+      OTEL_EXPORTER_OTLP_ENDPOINT - Base URL for OTLP HTTP export
+                                    (default: http://otel-collector:4318; read by exporters automatically)
+      OTEL_RESOURCE_ATTRIBUTES    - Extra resource labels, e.g. deployment.environment=dev
+    """
+    if os.environ.get("OTEL_SDK_DISABLED", "false").lower() == "true":
+        return
+
+    import importlib.metadata
+
+    try:
+        core_version = importlib.metadata.version("open-mpic-core")
+    except importlib.metadata.PackageNotFoundError:
+        core_version = "unknown"
+
+    resource = Resource.create(
+        {
+            SERVICE_NAME: os.environ.get("OTEL_SERVICE_NAME", service_name),
+            SERVICE_VERSION: core_version,
+        }
+    )
+
+    tracer_provider = TracerProvider(resource=resource)
+    tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+    trace.set_tracer_provider(tracer_provider)
+
+    reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+    meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+    metrics.set_meter_provider(meter_provider)
+
+    logger_provider = LoggerProvider(resource=resource)
+    logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+    set_logger_provider(logger_provider)
+    logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+
+
+def _shutdown_telemetry() -> None:
+    """Flush buffered telemetry and shut down SDK providers."""
+    for provider in (trace.get_tracer_provider(), metrics.get_meter_provider()):
+        if hasattr(provider, "shutdown"):
+            provider.shutdown()
+
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
@@ -54,13 +117,18 @@ def get_service() -> MpicDcvCheckerService:
 # noinspection PyUnusedLocal
 @asynccontextmanager
 async def lifespan(app_instance: FastAPI):
+    # Initialize telemetry before service so instruments are created against real providers
+    _setup_telemetry("mpic-dcv-checker")
+
     # Initialize services
     service = get_service()
     yield
     await service.shutdown()
+    _shutdown_telemetry()
 
 
 app = FastAPI(lifespan=lifespan)
+FastAPIInstrumentor.instrument_app(app)
 
 
 @app.post("/dcv")

@@ -1,0 +1,79 @@
+# Local-core override for Docker Compose — for development only, do NOT commit a filled-in copy.
+#
+# Purpose
+# -------
+# Replaces the pinned open-mpic-core package in each service container with
+# a locally-checked-out copy, so you can test core + containers together
+# before cutting a new core release.
+#
+# Setup
+# -----
+# 1. Copy this file to compose.local-core.yaml (already gitignored).
+# 2. Set OPEN_MPIC_CORE_PATH in your shell or a local .env file:
+#
+#       export OPEN_MPIC_CORE_PATH=../../../open-mpic-core-python
+#
+#    The default value (../../../open-mpic-core-python) assumes both repos are
+#    siblings in the same parent folder, which matches the VS Code workspace
+#    layout.  Override with an absolute path if your layout differs.
+#
+# Usage
+# -----
+# With pre-built images:
+#   docker compose -f compose.example.yaml \
+#                  -f compose.otel.yaml \
+#                  -f compose.local-core.yaml up
+#
+# With locally-built images:
+#   docker compose -f compose.build.example.yaml \
+#                  -f compose.otel.yaml \
+#                  -f compose.local-core.yaml up
+#
+# How it works
+# ------------
+# The override mounts OPEN_MPIC_CORE_PATH into each container at /local/open-mpic-core
+# and overrides the container startup command to pip-install it as an editable
+# package before launching uvicorn.  The built image remains unchanged; the
+# local install shadows the pinned PyPI version at runtime only.
+#
+# Removing local-core override
+# ----------------------------
+# Simply omit -f compose.local-core.yaml from your compose command.
+
+name: open-mpic
+
+x-local-core-command: &local-core-command
+  command: >
+    sh -c "hatch env run -e production -- pip install -q -e
+    /local/open-mpic-core &&
+           hatch env run -e production -- uvicorn main:app --host 0.0.0.0 --port 80
+           --proxy-headers --log-config /app/config/log_config.yaml"
+
+x-local-core-volume: &local-core-volume ${OPEN_MPIC_CORE_PATH:-../../../open-mpic-core-python}:/local/open-mpic-core:ro
+
+services:
+  coordinator:
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
+      - ./resources:/app/resources # keep the existing resources mount
+
+  dcv_checker_1:
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
+
+  dcv_checker_2:
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
+
+  caa_checker_1:
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
+
+  caa_checker_2:
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
