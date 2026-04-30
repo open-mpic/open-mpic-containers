@@ -2,7 +2,7 @@
   "title": "MPIC Overview",
   "uid": "mpic-overview",
   "schemaVersion": 39,
-  "version": 1,
+  "version": 3,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timezone": "browser",
@@ -67,7 +67,7 @@
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
       "targets": [
-        { "expr": "sum by (http_status_code) (rate(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\"}[1m]))", "legendFormat": "status={{http_status_code}}" }
+        { "expr": "sum by (http_status_code) (rate(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\"}[5m]))", "legendFormat": "status={{http_status_code}}" }
       ]
     },
     {
@@ -93,7 +93,7 @@
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
       "targets": [
-        { "expr": "sum by (exported_job,http_target,http_status_code) (rate(mpic_http_server_duration_milliseconds_count{exported_job=~\"mpic-(caa|dcv)-checker\"}[1m]))", "legendFormat": "{{exported_job}} {{http_target}} {{http_status_code}}" }
+        { "expr": "sum by (exported_job,http_target,http_status_code) (rate(mpic_http_server_duration_milliseconds_count{exported_job=~\"mpic-(caa|dcv)-checker\"}[5m]))", "legendFormat": "{{exported_job}} {{http_target}} {{http_status_code}}" }
       ]
     },
     {
@@ -118,7 +118,7 @@
       "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
       "datasource": { "uid": "loki", "type": "loki" },
       "options": { "dedupStrategy": "none", "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true },
-      "targets": [{ "expr": "{}", "legendFormat": "" }]
+      "targets": [{ "expr": "{service_name=~\"mpic-(coordinator|caa-checker|dcv-checker)\"}", "legendFormat": "" }]
     }
   ]
 }
