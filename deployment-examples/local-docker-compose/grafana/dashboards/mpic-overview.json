@@ -2,7 +2,7 @@
   "title": "MPIC Overview",
   "uid": "mpic-overview",
   "schemaVersion": 39,
-  "version": 3,
+  "version": 4,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timezone": "browser",
@@ -21,7 +21,7 @@
     {
       "id": 2,
       "type": "stat",
-      "title": "Valid MPIC Requests",
+      "title": "HTTP 200 Responses",
       "gridPos": { "x": 4, "y": 0, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
@@ -31,22 +31,22 @@
     {
       "id": 3,
       "type": "stat",
-      "title": "Invalid MPIC Requests",
+      "title": "MPIC Decision: Invalid (15m)",
       "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } } },
-      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=~\"4..|5..\"})", "legendFormat": "4xx/5xx" }]
+      "targets": [{ "expr": "sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",mpic_is_valid=\"false\"}[15m])) or vector(0)", "legendFormat": "is_valid=false" }]
     },
     {
       "id": 4,
       "type": "stat",
-      "title": "Coordinator 4xx/5xx",
+      "title": "Operational Errors (15m)",
       "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }] } } },
-      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=~\"4..|5..\"})", "legendFormat": "errors" }]
+      "targets": [{ "expr": "sum(increase(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=~\"4..|5..\"}[15m]))", "legendFormat": "4xx/5xx" }]
     },
     {
       "id": 5,
@@ -57,6 +57,16 @@
       "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 500 }, { "color": "red", "value": 2000 }] } } },
       "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_sum{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}) / sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"})", "legendFormat": "avg ms" }]
+    },
+    {
+      "id": 11,
+      "type": "stat",
+      "title": "Remote Check Errors (15m)",
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 }] } } },
+      "targets": [{ "expr": "sum(increase(mpic_mpic_remote_check_errors_total{exported_job=\"mpic-coordinator\"}[15m])) or vector(0)", "legendFormat": "remote errors" }]
     },
     {
       "id": 6,
