@@ -30,7 +30,7 @@ from opentelemetry.exporter.otlp.proto.http.metric_exporter import OTLPMetricExp
 from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 from pydantic import TypeAdapter, BaseModel, Field
 from open_mpic_core import MpicRequest, MpicResponse
-from open_mpic_core import MpicRequestValidationError, MpicRequestValidationMessages
+from open_mpic_core import MpicRequestValidationException as MpicRequestValidationError, MpicRequestValidationMessages
 from open_mpic_core import CheckType
 from open_mpic_core import CheckRequest, CheckResponse
 from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration

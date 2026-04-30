@@ -3,9 +3,14 @@ name: open-mpic
 services:
   dcv_checker_1:
     image: ghcr.io/open-mpic/dcv_checker:latest
+    environment:
+      code: example-region-1
+    dns:
+      - 172.31.250.53
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dcv1.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-1`)"
+      - "traefik.http.routers.dcv1.rule=Host(`localhost`) &&
+        PathPrefix(`/dcv-checker-1`)"
       - "traefik.http.services.dcv1.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_dcv1.stripprefix.prefixes=/dcv-checker-1"
       - "traefik.http.routers.dcv1.middlewares=strip_dcv1@docker"
@@ -17,9 +22,14 @@ services:
 
   dcv_checker_2:
     image: ghcr.io/open-mpic/dcv_checker:latest
+    environment:
+      code: example-region-2
+    dns:
+      - 172.31.250.54
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dcv2.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-2`)"
+      - "traefik.http.routers.dcv2.rule=Host(`localhost`) &&
+        PathPrefix(`/dcv-checker-2`)"
       - "traefik.http.services.dcv2.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_dcv2.stripprefix.prefixes=/dcv-checker-2"
       - "traefik.http.routers.dcv2.middlewares=strip_dcv2@docker"
@@ -33,9 +43,11 @@ services:
     image: ghcr.io/open-mpic/coordinator:latest
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.coordinator.rule=Host(`localhost`) && PathPrefix(`/mpic-coordinator`)"
+      - "traefik.http.routers.coordinator.rule=Host(`localhost`) &&
+        PathPrefix(`/mpic-coordinator`)"
       - "traefik.http.services.coordinator.loadbalancer.server.port=80"
-      - "traefik.http.middlewares.strip_coordinator.stripprefix.prefixes=/mpic-coordinator"
+      - "traefik.http.middlewares.strip_coordinator.stripprefix.prefixes=/mpic-\
+        coordinator"
       - "traefik.http.routers.coordinator.middlewares=strip_coordinator@docker"
     configs:
       - source: coordinator_config
@@ -47,9 +59,12 @@ services:
 
   caa_checker_1:
     image: ghcr.io/open-mpic/caa_checker:latest
+    dns:
+      - 172.31.250.53
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.caa1.rule=Host(`localhost`) && PathPrefix(`/caa-checker-1`)"
+      - "traefik.http.routers.caa1.rule=Host(`localhost`) &&
+        PathPrefix(`/caa-checker-1`)"
       - "traefik.http.services.caa1.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_caa1.stripprefix.prefixes=/caa-checker-1"
       - "traefik.http.routers.caa1.middlewares=strip_caa1@docker"
@@ -61,9 +76,12 @@ services:
 
   caa_checker_2:
     image: ghcr.io/open-mpic/caa_checker:latest
+    dns:
+      - 172.31.250.54
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.caa2.rule=Host(`localhost`) && PathPrefix(`/caa-checker-2`)"
+      - "traefik.http.routers.caa2.rule=Host(`localhost`) &&
+        PathPrefix(`/caa-checker-2`)"
       - "traefik.http.services.caa2.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_caa2.stripprefix.prefixes=/caa-checker-2"
       - "traefik.http.routers.caa2.middlewares=strip_caa2@docker"
@@ -72,6 +90,26 @@ services:
         target: /app/config/app.conf
       - source: log_config
         target: /app/config/log_config.yaml
+
+  coredns_good:
+    image: coredns/coredns:1.11.1
+    command: -conf /etc/coredns/Corefile
+    volumes:
+      - ./coredns/Corefile.good:/etc/coredns/Corefile:ro
+      - ./coredns/zones:/zones:ro
+    networks:
+      default:
+        ipv4_address: 172.31.250.53
+
+  coredns_bad:
+    image: coredns/coredns:1.11.1
+    command: -conf /etc/coredns/Corefile
+    volumes:
+      - ./coredns/Corefile.bad:/etc/coredns/Corefile:ro
+      - ./coredns/zones:/zones:ro
+    networks:
+      default:
+        ipv4_address: 172.31.250.54
 
   traefik:
     image: traefik:v2.9
@@ -109,3 +147,9 @@ configs:
       hash_secret=hash_secret
   log_config:
     file: ./common_config/log_config.yaml
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24

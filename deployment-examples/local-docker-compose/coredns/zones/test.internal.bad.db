@@ -1,0 +1,26 @@
+$ORIGIN test.internal.
+$TTL 60
+@ IN SOA ns1.test.internal. hostmaster.test.internal. (
+  2026043003 ; serial
+  3600       ; refresh
+  1800       ; retry
+  604800     ; expire
+  60         ; minimum
+)
+@ IN NS ns1.test.internal.
+ns1 IN A 172.31.250.54
+
+; Deterministic "bad" answers for local MPIC tests.
+_acme-challenge.good IN TXT "token-bad"
+good IN A 203.0.113.20
+good IN CAA 0 issue "letsencrypt.org"
+
+; Explicit names for mixed-result traffic generation.
+valid IN A 203.0.113.21
+valid IN CAA 0 issue "example.com"
+
+invalid IN A 203.0.113.22
+invalid IN CAA 0 issue "letsencrypt.org"
+
+_validation.valid IN TXT "dcv-valid-token"
+_validation.invalid IN TXT "dcv-invalid-token"

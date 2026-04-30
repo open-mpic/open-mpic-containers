@@ -14,13 +14,31 @@ This guide will help you set up and run all MPIC services using Docker Compose a
 
 ## Running the Services
 
-To start all services and Traefik, run the following command:
+Use these compose files:
+
+- `compose.example.yaml`: baseline stack using published GHCR images.
+- `compose.dev.yaml`: **recommended** local development workflow. Builds local service images and can optionally use a local `open-mpic-core-python` checkout.
+- `compose.otel.yaml`: telemetry overlay (Prometheus/Grafana/Tempo/Loki/Collector). Combine with either base file above.
+
+Baseline run (published images, no telemetry):
 
 ```sh
-docker compose up -d
+docker compose -f compose.example.yaml up -d
 ```
 
-This command will start all the services defined in the `compose.yml` file and Traefik will route traffic to each service based on the defined rules.
+Recommended local dev run (single base file + telemetry overlay):
+
+```sh
+OPEN_MPIC_CORE_PATH=../../../open-mpic-core-python \
+docker compose -f compose.dev.yaml -f compose.otel.yaml up -d --build
+```
+
+`compose.dev.yaml` works in both cases:
+
+- With local core checkout present at `OPEN_MPIC_CORE_PATH`: container startup installs that local core checkout.
+- Without local core checkout: startup falls back to the image-pinned core package and still runs.
+
+This command starts the services and Traefik routes traffic through a single entrypoint.
 
 ## Accessing the Services
 
@@ -67,6 +85,44 @@ curl -H 'Content-Type: application/json' \
 ```
 
 Note: because this deployment is for testing, it does not implement the `x-api-key` header authentication.
+
+## Deterministic Mixed CAA Traffic
+
+To generate both successful and invalid MPIC CAA decisions with the split-DNS test setup, run:
+
+```sh
+./generate_mixed_caa_traffic.sh --iterations 10 --delay 0.2
+```
+
+This sends requests for two local-only domains:
+
+- `valid.test.internal` returns the allowed CAA value from both checker DNS views and should produce `mpic_is_valid=True`.
+- `invalid.test.internal` returns mismatched CAA values across the two checker DNS views and should produce `mpic_is_valid=False`.
+
+If you update the zone files, restart the CoreDNS containers so they pick up the new records.
+
+## Deterministic Controlled CAA/DCV Traffic
+
+Use this script to generate deterministic valid and invalid traffic for both CAA and DCV checks:
+
+```sh
+./generate_controlled_traffic.sh --iterations 10 --delay 0.2
+```
+
+Useful filters:
+
+```sh
+# Only DCV invalid traffic
+./generate_controlled_traffic.sh --check-type dcv --outcome invalid --iterations 20 --delay 0.1
+
+# Only CAA valid traffic
+./generate_controlled_traffic.sh --check-type caa --outcome valid --iterations 20 --delay 0.1
+```
+
+The script uses these deterministic local domains:
+
+- `valid.test.internal` should pass CAA and DCV for both perspectives.
+- `invalid.test.internal` should fail quorum for both CAA and DCV due to split-DNS mismatch.
 
 ## Stopping the Services
 

@@ -1,14 +1,40 @@
 name: open-mpic
 
+# Single-file local development compose:
+# - Builds services from local api-implementation sources
+# - Keeps split-DNS CoreDNS wiring for deterministic valid/invalid traffic
+# - Optionally uses local open-mpic-core-python when present at OPEN_MPIC_CORE_PATH
+
+x-local-core-command: &local-core-command
+  command: >
+    sh -c "if [ -f /local/open-mpic-core/pyproject.toml ]; then
+             echo 'Using local open-mpic-core from /local/open-mpic-core';
+             hatch env run -e production -- pip install -q -e /local/open-mpic-core;
+           else
+             echo 'Local open-mpic-core not found; using image-pinned core package';
+           fi &&
+           hatch env run -e production -- uvicorn main:app --host 0.0.0.0 --port 80
+           --proxy-headers --log-config /app/config/log_config.yaml"
+
+x-local-core-volume: &local-core-volume ${OPEN_MPIC_CORE_PATH:-../../../open-mpic-core-python}:/local/open-mpic-core:ro
+
 services:
   dcv_checker_1:
     build:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_dcv_checker_service"
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
+    environment:
+      code: example-region-1
+    dns:
+      - 172.31.250.53
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dcv1.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-1`)"
+      - "traefik.http.routers.dcv1.rule=Host(`localhost`) &&
+        PathPrefix(`/dcv-checker-1`)"
       - "traefik.http.services.dcv1.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_dcv1.stripprefix.prefixes=/dcv-checker-1"
       - "traefik.http.routers.dcv1.middlewares=strip_dcv1@docker"
@@ -23,9 +49,17 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_dcv_checker_service"
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
+    environment:
+      code: example-region-2
+    dns:
+      - 172.31.250.54
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dcv2.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-2`)"
+      - "traefik.http.routers.dcv2.rule=Host(`localhost`) &&
+        PathPrefix(`/dcv-checker-2`)"
       - "traefik.http.services.dcv2.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_dcv2.stripprefix.prefixes=/dcv-checker-2"
       - "traefik.http.routers.dcv2.middlewares=strip_dcv2@docker"
@@ -40,11 +74,14 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_coordinator_service"
+    <<: *local-core-command
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.coordinator.rule=Host(`localhost`) && PathPrefix(`/mpic-coordinator`)"
+      - "traefik.http.routers.coordinator.rule=Host(`localhost`) &&
+        PathPrefix(`/mpic-coordinator`)"
       - "traefik.http.services.coordinator.loadbalancer.server.port=80"
-      - "traefik.http.middlewares.strip_coordinator.stripprefix.prefixes=/mpic-coordinator"
+      - "traefik.http.middlewares.strip_coordinator.stripprefix.prefixes=/mpic-\
+        coordinator"
       - "traefik.http.routers.coordinator.middlewares=strip_coordinator@docker"
     configs:
       - source: coordinator_config
@@ -52,6 +89,7 @@ services:
       - source: log_config
         target: /app/config/log_config.yaml
     volumes:
+      - *local-core-volume
       - ./resources:/app/resources
 
   caa_checker_1:
@@ -59,9 +97,15 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_caa_checker_service"
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
+    dns:
+      - 172.31.250.53
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.caa1.rule=Host(`localhost`) && PathPrefix(`/caa-checker-1`)"
+      - "traefik.http.routers.caa1.rule=Host(`localhost`) &&
+        PathPrefix(`/caa-checker-1`)"
       - "traefik.http.services.caa1.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_caa1.stripprefix.prefixes=/caa-checker-1"
       - "traefik.http.routers.caa1.middlewares=strip_caa1@docker"
@@ -76,9 +120,15 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_caa_checker_service"
+    <<: *local-core-command
+    volumes:
+      - *local-core-volume
+    dns:
+      - 172.31.250.54
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.caa2.rule=Host(`localhost`) && PathPrefix(`/caa-checker-2`)"
+      - "traefik.http.routers.caa2.rule=Host(`localhost`) &&
+        PathPrefix(`/caa-checker-2`)"
       - "traefik.http.services.caa2.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_caa2.stripprefix.prefixes=/caa-checker-2"
       - "traefik.http.routers.caa2.middlewares=strip_caa2@docker"
@@ -88,17 +138,35 @@ services:
       - source: log_config
         target: /app/config/log_config.yaml
 
+  coredns_good:
+    image: coredns/coredns:1.11.1
+    command: -conf /etc/coredns/Corefile
+    volumes:
+      - ./coredns/Corefile.good:/etc/coredns/Corefile:ro
+      - ./coredns/zones:/zones:ro
+    networks:
+      default:
+        ipv4_address: 172.31.250.53
+
+  coredns_bad:
+    image: coredns/coredns:1.11.1
+    command: -conf /etc/coredns/Corefile
+    volumes:
+      - ./coredns/Corefile.bad:/etc/coredns/Corefile:ro
+      - ./coredns/zones:/zones:ro
+    networks:
+      default:
+        ipv4_address: 172.31.250.54
+
   traefik:
     image: traefik:v2.9
     command:
-      - --api.insecure=true # Don't do this in production!
+      - --api.insecure=true # Do not use this in production.
       - --providers.docker=true
       - --api.dashboard=true
       - --providers.docker.exposedbydefault=false
     ports:
-      # The HTTP port
       - "8000:80"
-      # The Web UI (enabled by --api.insecure=true)
       - "8080:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
@@ -124,3 +192,9 @@ configs:
       hash_secret=hash_secret
   log_config:
     file: ./common_config/log_config.yaml
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.31.250.0/24
