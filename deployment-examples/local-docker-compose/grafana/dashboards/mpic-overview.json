@@ -36,13 +36,23 @@
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } } },
-      "targets": [{ "expr": "sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",mpic_is_valid=\"false\"}[15m])) or vector(0)", "legendFormat": "is_valid=false" }]
+      "targets": [{ "expr": "round(sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",mpic_is_valid=~\"(?i)false\"}[15m]))) or vector(0)", "legendFormat": "is_valid=false" }]
+    },
+    {
+      "id": 12,
+      "type": "stat",
+      "title": "MPIC Decision: Valid (15m)",
+      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } },
+      "targets": [{ "expr": "round(sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",mpic_is_valid=~\"(?i)true\"}[15m]))) or vector(0)", "legendFormat": "is_valid=true" }]
     },
     {
       "id": 4,
       "type": "stat",
       "title": "Operational Errors (15m)",
-      "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
+      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }] } } },
@@ -52,7 +62,7 @@
       "id": 5,
       "type": "stat",
       "title": "Avg Coordinator Duration (ms)",
-      "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
+      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 500 }, { "color": "red", "value": 2000 }] } } },
@@ -62,17 +72,67 @@
       "id": 11,
       "type": "stat",
       "title": "Remote Check Errors (15m)",
-      "gridPos": { "x": 20, "y": 0, "w": 4, "h": 4 },
+      "gridPos": { "x": 0, "y": 4, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 }] } } },
       "targets": [{ "expr": "sum(increase(mpic_mpic_remote_check_errors_total{exported_job=\"mpic-coordinator\"}[15m])) or vector(0)", "legendFormat": "remote errors" }]
     },
     {
+      "id": 13,
+      "type": "timeseries",
+      "title": "CAA Decision Rate: Valid vs Invalid",
+      "gridPos": { "x": 4, "y": 4, "w": 10, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "valid" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "green", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "invalid" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "red", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "targets": [
+        { "expr": "sum(rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"caa\",mpic_is_valid=~\"(?i)true\"}[$__rate_interval])) or vector(0)", "legendFormat": "valid" },
+        { "expr": "sum(rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"caa\",mpic_is_valid=~\"(?i)false\"}[$__rate_interval])) or vector(0)", "legendFormat": "invalid" }
+      ]
+    },
+    {
+      "id": 14,
+      "type": "timeseries",
+      "title": "DCV Decision Rate: Valid vs Invalid",
+      "gridPos": { "x": 14, "y": 4, "w": 10, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "valid" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "blue", "mode": "fixed" } }]
+          },
+          {
+            "matcher": { "id": "byName", "options": "invalid" },
+            "properties": [{ "id": "color", "value": { "fixedColor": "orange", "mode": "fixed" } }]
+          }
+        ]
+      },
+      "targets": [
+        { "expr": "sum(rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"dcv\",mpic_is_valid=~\"(?i)true\"}[$__rate_interval])) or vector(0)", "legendFormat": "valid" },
+        { "expr": "sum(rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"dcv\",mpic_is_valid=~\"(?i)false\"}[$__rate_interval])) or vector(0)", "legendFormat": "invalid" }
+      ]
+    },
+    {
       "id": 6,
       "type": "timeseries",
       "title": "Request Rate by Status",
-      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
@@ -84,7 +144,7 @@
       "id": 7,
       "type": "timeseries",
       "title": "Coordinator P50 / P95 / P99 Latency (ms)",
-      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
@@ -98,7 +158,7 @@
       "id": 8,
       "type": "timeseries",
       "title": "Checker Request Rate",
-      "gridPos": { "x": 0, "y": 12, "w": 12, "h": 8 },
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
@@ -110,7 +170,7 @@
       "id": 9,
       "type": "timeseries",
       "title": "CAA/DCV Duration (ms)",
-      "gridPos": { "x": 12, "y": 12, "w": 12, "h": 8 },
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
@@ -122,10 +182,22 @@
       ]
     },
     {
+      "id": 15,
+      "type": "timeseries",
+      "title": "Decision Rate by Check Type and Outcome",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "sum by (check_type, mpic_is_valid) (rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\"}[$__rate_interval])) or vector(0)", "legendFormat": "{{check_type}} is_valid={{mpic_is_valid}}" }
+      ]
+    },
+    {
       "id": 10,
       "type": "logs",
       "title": "Service Logs",
-      "gridPos": { "x": 0, "y": 20, "w": 24, "h": 8 },
+      "gridPos": { "x": 0, "y": 32, "w": 24, "h": 8 },
       "datasource": { "uid": "loki", "type": "loki" },
       "options": { "dedupStrategy": "none", "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true },
       "targets": [{ "expr": "{service_name=~\"mpic-(coordinator|caa-checker|dcv-checker)\"}", "legendFormat": "" }]
