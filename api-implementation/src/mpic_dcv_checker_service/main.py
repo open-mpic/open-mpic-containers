@@ -1,3 +1,4 @@
+import importlib.metadata
 import logging
 import os
 import tomllib
@@ -56,8 +57,6 @@ def _setup_telemetry(service_name: str) -> None:
     if not (traces_enabled or metrics_enabled or logs_enabled):
         return
 
-    import importlib.metadata
-
     try:
         core_version = importlib.metadata.version("open-mpic-core")
     except importlib.metadata.PackageNotFoundError:
@@ -84,7 +83,7 @@ def _setup_telemetry(service_name: str) -> None:
         logger_provider = LoggerProvider(resource=resource)
         logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
         set_logger_provider(logger_provider)
-        logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+        logging.getLogger().addHandler(LoggingHandler(level=logging.INFO, logger_provider=logger_provider))
 
 
 def _shutdown_telemetry() -> None:
