@@ -25,6 +25,9 @@ services:
 
   coordinator:
     environment:
+      OTEL_TRACES_ENABLED: "true"
+      OTEL_METRICS_ENABLED: "true"
+      OTEL_LOGS_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: mpic-coordinator
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local
@@ -33,6 +36,9 @@ services:
 
   dcv_checker_1:
     environment:
+      OTEL_TRACES_ENABLED: "true"
+      OTEL_METRICS_ENABLED: "true"
+      OTEL_LOGS_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: mpic-dcv-checker
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,perspective.slot=1
@@ -41,6 +47,9 @@ services:
 
   dcv_checker_2:
     environment:
+      OTEL_TRACES_ENABLED: "true"
+      OTEL_METRICS_ENABLED: "true"
+      OTEL_LOGS_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: mpic-dcv-checker
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,perspective.slot=2
@@ -49,6 +58,9 @@ services:
 
   caa_checker_1:
     environment:
+      OTEL_TRACES_ENABLED: "true"
+      OTEL_METRICS_ENABLED: "true"
+      OTEL_LOGS_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: mpic-caa-checker
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,perspective.slot=1
@@ -57,6 +69,9 @@ services:
 
   caa_checker_2:
     environment:
+      OTEL_TRACES_ENABLED: "true"
+      OTEL_METRICS_ENABLED: "true"
+      OTEL_LOGS_ENABLED: "true"
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
       OTEL_SERVICE_NAME: mpic-caa-checker
       OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local,perspective.slot=2
