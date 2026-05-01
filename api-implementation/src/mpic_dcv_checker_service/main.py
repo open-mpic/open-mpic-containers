@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, status
 from fastapi.responses import JSONResponse
 from opentelemetry import trace, metrics
-from opentelemetry._logs import set_logger_provider
+from opentelemetry._logs import get_logger_provider, set_logger_provider
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
@@ -26,17 +26,34 @@ from open_mpic_core import MpicDcvChecker
 from open_mpic_core import get_logger
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    value = os.environ.get(name)
+    if value is None:
+        return default
+    return value.lower() == "true"
+
+
+def _otel_tracing_enabled() -> bool:
+    return _env_bool("OTEL_TRACES_ENABLED", False)
+
+
 def _setup_telemetry(service_name: str) -> None:
     """Initialize OpenTelemetry SDK providers for metrics, traces, and logs.
 
     Reads the following environment variables (all optional):
-      OTEL_SDK_DISABLED           - Set 'true' to skip setup entirely (default: false)
+      OTEL_TRACES_ENABLED         - Set 'true' to export traces (default: false)
+      OTEL_METRICS_ENABLED        - Set 'true' to export metrics (default: false)
+      OTEL_LOGS_ENABLED           - Set 'true' to export logs (default: false)
       OTEL_SERVICE_NAME           - Service name reported to backends (overrides service_name arg)
       OTEL_EXPORTER_OTLP_ENDPOINT - Base URL for OTLP HTTP export
                                     (default: http://otel-collector:4318; read by exporters automatically)
       OTEL_RESOURCE_ATTRIBUTES    - Extra resource labels, e.g. deployment.environment=dev
     """
-    if os.environ.get("OTEL_SDK_DISABLED", "false").lower() == "true":
+    traces_enabled = _env_bool("OTEL_TRACES_ENABLED", False)
+    metrics_enabled = _env_bool("OTEL_METRICS_ENABLED", False)
+    logs_enabled = _env_bool("OTEL_LOGS_ENABLED", False)
+
+    if not (traces_enabled or metrics_enabled or logs_enabled):
         return
 
     import importlib.metadata
@@ -53,23 +70,26 @@ def _setup_telemetry(service_name: str) -> None:
         }
     )
 
-    tracer_provider = TracerProvider(resource=resource)
-    tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-    trace.set_tracer_provider(tracer_provider)
+    if traces_enabled:
+        tracer_provider = TracerProvider(resource=resource)
+        tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+        trace.set_tracer_provider(tracer_provider)
 
-    reader = PeriodicExportingMetricReader(OTLPMetricExporter())
-    meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
-    metrics.set_meter_provider(meter_provider)
+    if metrics_enabled:
+        reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+        meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+        metrics.set_meter_provider(meter_provider)
 
-    logger_provider = LoggerProvider(resource=resource)
-    logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
-    set_logger_provider(logger_provider)
-    logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
+    if logs_enabled:
+        logger_provider = LoggerProvider(resource=resource)
+        logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+        set_logger_provider(logger_provider)
+        logging.getLogger().addHandler(LoggingHandler(level=logging.NOTSET, logger_provider=logger_provider))
 
 
 def _shutdown_telemetry() -> None:
     """Flush buffered telemetry and shut down SDK providers."""
-    for provider in (trace.get_tracer_provider(), metrics.get_meter_provider()):
+    for provider in (trace.get_tracer_provider(), metrics.get_meter_provider(), get_logger_provider()):
         if hasattr(provider, "shutdown"):
             provider.shutdown()
 
@@ -136,7 +156,8 @@ async def lifespan(app_instance: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-FastAPIInstrumentor.instrument_app(app)
+if _otel_tracing_enabled():
+    FastAPIInstrumentor.instrument_app(app)
 
 
 # noinspection PyUnresolvedReferences
