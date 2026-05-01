@@ -16,8 +16,8 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from opentelemetry import trace, metrics
 from opentelemetry._logs import get_logger_provider, set_logger_provider
+from opentelemetry.instrumentation.aiohttp_client import AioHttpClientInstrumentor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.propagate import inject
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
@@ -101,13 +101,6 @@ def _shutdown_telemetry() -> None:
     for provider in (trace.get_tracer_provider(), metrics.get_meter_provider(), get_logger_provider()):
         if hasattr(provider, "shutdown"):
             provider.shutdown()
-
-
-def _otel_propagation_headers() -> dict[str, str]:
-    """Return W3C trace-context headers for the current active span (empty dict when no SDK)."""
-    headers: dict[str, str] = {}
-    inject(headers)
-    return headers
 
 
 # 'config' directory should be a sibling of the directory containing this file
@@ -240,7 +233,7 @@ class MpicCoordinatorService:
 
         async with self._async_http_client.post(
             url=endpoint_info.url,
-            headers={**dict(endpoint_info.headers or {}), **_otel_propagation_headers()},
+            headers=dict(endpoint_info.headers or {}),
             json=check_request.model_dump(),
         ) as response:
             text = await response.text()
@@ -284,6 +277,7 @@ async def lifespan(app_instance: FastAPI):
 app = FastAPI(lifespan=lifespan)
 if _otel_tracing_enabled():
     FastAPIInstrumentor.instrument_app(app)
+    AioHttpClientInstrumentor().instrument()
 
 
 # noinspection PyUnusedLocal
