@@ -2,7 +2,7 @@
   "title": "MPIC Overview",
   "uid": "mpic-overview",
   "schemaVersion": 39,
-  "version": 4,
+  "version": 7,
   "refresh": "10s",
   "time": { "from": "now-1h", "to": "now" },
   "timezone": "browser",
@@ -16,7 +16,7 @@
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } },
-      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\"})", "legendFormat": "Requests" }]
+      "targets": [{ "expr": "round(sum(increase(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\"}[$__range]))) or vector(0)", "legendFormat": "Requests" }]
     },
     {
       "id": 2,
@@ -26,37 +26,37 @@
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } },
-      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"})", "legendFormat": "200 OK" }]
+      "targets": [{ "expr": "round(sum(increase(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[$__range]))) or vector(0)", "legendFormat": "200 OK" }]
     },
     {
       "id": 3,
       "type": "stat",
-      "title": "MPIC Decision: Invalid (15m)",
+      "title": "MPIC Decision: Invalid",
       "gridPos": { "x": 8, "y": 0, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "red", "value": null }] } } },
-      "targets": [{ "expr": "round(sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",mpic_is_valid=~\"(?i)false\"}[15m]))) or vector(0)", "legendFormat": "is_valid=false" }]
+      "targets": [{ "expr": "round(sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",mpic_is_valid=~\"(?i)false\"}[$__range]))) or vector(0)", "legendFormat": "is_valid=false" }]
     },
     {
       "id": 12,
       "type": "stat",
-      "title": "MPIC Decision: Valid (15m)",
+      "title": "MPIC Decision: Valid",
       "gridPos": { "x": 12, "y": 0, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } },
-      "targets": [{ "expr": "round(sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",mpic_is_valid=~\"(?i)true\"}[15m]))) or vector(0)", "legendFormat": "is_valid=true" }]
+      "targets": [{ "expr": "round(sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",mpic_is_valid=~\"(?i)true\"}[$__range]))) or vector(0)", "legendFormat": "is_valid=true" }]
     },
     {
       "id": 4,
       "type": "stat",
-      "title": "Operational Errors (15m)",
+      "title": "Operational Errors",
       "gridPos": { "x": 16, "y": 0, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 10 }] } } },
-      "targets": [{ "expr": "sum(increase(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=~\"4..|5..\"}[15m]))", "legendFormat": "4xx/5xx" }]
+      "targets": [{ "expr": "round(sum(increase(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=~\"4..|5..\"}[$__range]))) or vector(0)", "legendFormat": "4xx/5xx" }]
     },
     {
       "id": 5,
@@ -66,17 +66,17 @@
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "value", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "unit": "ms", "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 500 }, { "color": "red", "value": 2000 }] } } },
-      "targets": [{ "expr": "sum(mpic_http_server_duration_milliseconds_sum{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}) / sum(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"})", "legendFormat": "avg ms" }]
+      "targets": [{ "expr": "sum(increase(mpic_http_server_duration_milliseconds_sum{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[$__range])) / clamp_min(sum(increase(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[$__range])), 1)", "legendFormat": "avg ms" }]
     },
     {
       "id": 11,
       "type": "stat",
-      "title": "Remote Check Errors (15m)",
+      "title": "Remote Check Errors",
       "gridPos": { "x": 0, "y": 4, "w": 4, "h": 4 },
       "datasource": { "uid": "prometheus", "type": "prometheus" },
       "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
       "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "orange", "value": 1 }, { "color": "red", "value": 5 }] } } },
-      "targets": [{ "expr": "sum(increase(mpic_mpic_remote_check_errors_total{exported_job=\"mpic-coordinator\"}[15m])) or vector(0)", "legendFormat": "remote errors" }]
+      "targets": [{ "expr": "round(sum(increase(mpic_mpic_remote_check_errors_total{exported_job=\"mpic-coordinator\"}[$__range]))) or vector(0)", "legendFormat": "remote errors" }]
     },
     {
       "id": 13,
@@ -99,8 +99,8 @@
         ]
       },
       "targets": [
-        { "expr": "sum(rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"caa\",mpic_is_valid=~\"(?i)true\"}[$__rate_interval])) or vector(0)", "legendFormat": "valid" },
-        { "expr": "sum(rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"caa\",mpic_is_valid=~\"(?i)false\"}[$__rate_interval])) or vector(0)", "legendFormat": "invalid" }
+        { "expr": "sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"caa\",mpic_is_valid=~\"(?i)true\"}[5m])) / 300", "legendFormat": "valid" },
+        { "expr": "sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"caa\",mpic_is_valid=~\"(?i)false\"}[5m])) / 300", "legendFormat": "invalid" }
       ]
     },
     {
@@ -124,8 +124,8 @@
         ]
       },
       "targets": [
-        { "expr": "sum(rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"dcv\",mpic_is_valid=~\"(?i)true\"}[$__rate_interval])) or vector(0)", "legendFormat": "valid" },
-        { "expr": "sum(rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"dcv\",mpic_is_valid=~\"(?i)false\"}[$__rate_interval])) or vector(0)", "legendFormat": "invalid" }
+        { "expr": "sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"dcv\",mpic_is_valid=~\"(?i)true\"}[5m])) / 300", "legendFormat": "valid" },
+        { "expr": "sum(increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\",check_type=\"dcv\",mpic_is_valid=~\"(?i)false\"}[5m])) / 300", "legendFormat": "invalid" }
       ]
     },
     {
@@ -137,7 +137,7 @@
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
       "targets": [
-        { "expr": "sum by (http_status_code) (rate(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\"}[5m]))", "legendFormat": "status={{http_status_code}}" }
+        { "expr": "sum by (http_status_code) (increase(mpic_http_server_duration_milliseconds_count{exported_job=\"mpic-coordinator\",http_target=\"/mpic\"}[5m])) / 300", "legendFormat": "status={{http_status_code}}" }
       ]
     },
     {
@@ -149,9 +149,9 @@
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
       "targets": [
-        { "expr": "histogram_quantile(0.50, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p50" },
-        { "expr": "histogram_quantile(0.95, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p95" },
-        { "expr": "histogram_quantile(0.99, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p99" }
+        { "expr": "histogram_quantile(0.50, sum by (le) (increase(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (increase(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p95" },
+        { "expr": "histogram_quantile(0.99, sum by (le) (increase(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-coordinator\",http_target=\"/mpic\",http_status_code=\"200\"}[5m])))", "legendFormat": "p99" }
       ]
     },
     {
@@ -163,7 +163,7 @@
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "custom": { "lineWidth": 2 } } },
       "targets": [
-        { "expr": "sum by (exported_job,http_target,http_status_code) (rate(mpic_http_server_duration_milliseconds_count{exported_job=~\"mpic-(caa|dcv)-checker\"}[5m]))", "legendFormat": "{{exported_job}} {{http_target}} {{http_status_code}}" }
+        { "expr": "sum by (exported_job,http_target,http_status_code) (increase(mpic_http_server_duration_milliseconds_count{exported_job=~\"mpic-(caa|dcv)-checker\"}[5m])) / 300", "legendFormat": "{{exported_job}} {{http_target}} {{http_status_code}}" }
       ]
     },
     {
@@ -175,10 +175,10 @@
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "unit": "ms", "custom": { "lineWidth": 2 } } },
       "targets": [
-        { "expr": "histogram_quantile(0.50, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-caa-checker\",http_target=\"/caa\"}[5m])))", "legendFormat": "caa p50" },
-        { "expr": "histogram_quantile(0.95, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-caa-checker\",http_target=\"/caa\"}[5m])))", "legendFormat": "caa p95" },
-        { "expr": "histogram_quantile(0.50, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-dcv-checker\",http_target=\"/dcv\"}[5m])))", "legendFormat": "dcv p50" },
-        { "expr": "histogram_quantile(0.95, sum by (le) (rate(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-dcv-checker\",http_target=\"/dcv\"}[5m])))", "legendFormat": "dcv p95" }
+        { "expr": "histogram_quantile(0.50, sum by (le) (increase(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-caa-checker\",http_target=\"/caa\"}[5m])))", "legendFormat": "caa p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (increase(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-caa-checker\",http_target=\"/caa\"}[5m])))", "legendFormat": "caa p95" },
+        { "expr": "histogram_quantile(0.50, sum by (le) (increase(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-dcv-checker\",http_target=\"/dcv\"}[5m])))", "legendFormat": "dcv p50" },
+        { "expr": "histogram_quantile(0.95, sum by (le) (increase(mpic_http_server_duration_milliseconds_bucket{exported_job=\"mpic-dcv-checker\",http_target=\"/dcv\"}[5m])))", "legendFormat": "dcv p95" }
       ]
     },
     {
@@ -190,7 +190,7 @@
       "options": { "tooltip": { "mode": "multi" } },
       "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
       "targets": [
-        { "expr": "sum by (check_type, mpic_is_valid) (rate(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\"}[$__rate_interval])) or vector(0)", "legendFormat": "{{check_type}} is_valid={{mpic_is_valid}}" }
+        { "expr": "sum by (check_type, mpic_is_valid) (increase(mpic_mpic_requests_total{exported_job=\"mpic-coordinator\"}[5m])) / 300", "legendFormat": "{{check_type}} is_valid={{mpic_is_valid}}" }
       ]
     },
     {

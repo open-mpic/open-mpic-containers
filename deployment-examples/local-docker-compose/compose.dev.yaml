@@ -13,8 +13,7 @@ x-local-core-command: &local-core-command
            else
              echo 'Local open-mpic-core not found; using image-pinned core package';
            fi &&
-           hatch env run -e production -- uvicorn main:app --host 0.0.0.0 --port 80
-           --proxy-headers --log-config /app/config/log_config.yaml"
+           hatch env run -e production -- uvicorn main:app --host 0.0.0.0 --port 80 --proxy-headers --log-config /app/config/log_config.yaml"
 
 x-local-core-volume: &local-core-volume ${OPEN_MPIC_CORE_PATH:-../../../open-mpic-core-python}:/local/open-mpic-core:ro
 

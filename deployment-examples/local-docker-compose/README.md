@@ -109,6 +109,22 @@ Use this script to generate deterministic valid and invalid traffic for both CAA
 ./generate_controlled_traffic.sh --iterations 10 --delay 0.2
 ```
 
+If you do not want to remember script names and flags, use the local Makefile instead:
+
+```sh
+make traffic
+```
+
+Useful Make targets:
+
+```sh
+make traffic
+make traffic-mixed-caa
+make traffic-caa-valid ITERATIONS=20 DELAY=0.1
+make traffic-dcv-invalid ITERATIONS=20 DELAY=0.1
+make traffic-random CHECK_TYPE=caa DOMAINS=good.test.internal
+```
+
 Useful filters:
 
 ```sh
