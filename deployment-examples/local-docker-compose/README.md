@@ -6,11 +6,14 @@ This guide will help you set up and run all MPIC services using Docker Compose a
 
 - Docker installed on your machine
 - Docker Compose installed on your machine
+- `make` (used for traffic generation scripts)
 
 ## Setup
 
-1. Copy `config.example.yaml` to `config.yaml` to use the default config.
-2. Copy `resources/available_perspectives.example.yaml` to `resources/available_perspectives.yaml`
+1. Copy `resources/available_perspectives.example.yaml` to `resources/available_perspectives.yaml`.
+2. Copy `common_config/log_config.example.yaml` to `common_config/log_config.yaml`.
+
+Both files are gitignored (deployment-specific). The `.example.yaml` versions contain working defaults for local development.
 
 ## Running the Services
 
@@ -40,13 +43,52 @@ docker compose -f compose.dev.yaml -f compose.otel.yaml up -d --build
 
 This command starts the services and Traefik routes traffic through a single entrypoint.
 
+## Quickstart (Local Dev + Observability)
+
+Bring up the full local stack (services + Grafana/Prometheus/Loki/Tempo):
+
+```sh
+OPEN_MPIC_CORE_PATH=../../../open-mpic-core-python \
+docker compose -f compose.dev.yaml -f compose.otel.yaml up -d --build
+```
+
+Generate traffic so dashboards, logs, and traces populate:
+
+```sh
+make traffic
+make traffic-mixed-caa
+make traffic-dcv-invalid
+```
+
+Open Grafana at [http://localhost:3000](http://localhost:3000) (no login required — anonymous access is enabled), then:
+
+1. Open dashboard `MPIC Overview` for metrics.
+2. Open dashboard `MPIC Traces` for trace-focused triage.
+3. Use the `Service Logs` panel for recent logs.
+4. For traces, open Grafana `Explore`, choose data source `Tempo`, and run a TraceQL query like:
+
+```traceql
+{ resource.service.name =~ "mpic-.*" }
+```
+
+When you open a trace in Explore, Grafana shows span timing and a flamegraph-style span view.
+You can also jump from Loki logs to Tempo traces via the `View Trace in Tempo` derived field when a log line contains a trace id.
+
+### Note on span log icons in Tempo traces
+
+When you click a log icon on a span, Grafana pivots to Loki using service labels and a span-adjacent time window.
+Some spans may still show no logs if the application did not emit a log line during that exact span window.
+This is expected and does not mean tracing is broken.
+
 ## Accessing the Services
 
 You can access your services using the following URLs:
 
-- http://localhost:8000/dcv-checker-X/dcv - dcv service
-- http://localhost:8000/caa-checker-X/caa - caa service
-- http://localhost:8000/mpic-coordinator/mpic - coordinator service
+- http://localhost:8000/dcv-checker-1/dcv — DCV checker (instance 1)
+- http://localhost:8000/dcv-checker-2/dcv — DCV checker (instance 2)
+- http://localhost:8000/caa-checker-1/caa — CAA checker (instance 1)
+- http://localhost:8000/caa-checker-2/caa — CAA checker (instance 2)
+- http://localhost:8000/mpic-coordinator/mpic — coordinator (main entrypoint)
 
 You can also access the Traefik dashboard at [http://localhost:8080/dashboard](http://localhost:8080/dashboard).
 

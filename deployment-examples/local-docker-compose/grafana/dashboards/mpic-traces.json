@@ -1,0 +1,55 @@
+{
+  "title": "MPIC Traces",
+  "uid": "mpic-traces",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "tags": ["mpic", "tracing"],
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Spans Started (Selected Range)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "colorMode": "background", "graphMode": "area", "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "blue", "value": null }] } } },
+      "targets": [{ "expr": "round(sum(increase(mpic_otel_sdk_span_started_total[$__range]))) or vector(0)", "legendFormat": "spans" }]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Span Start Rate by Service",
+      "gridPos": { "x": 6, "y": 0, "w": 18, "h": 8 },
+      "datasource": { "uid": "prometheus", "type": "prometheus" },
+      "options": { "tooltip": { "mode": "multi" } },
+      "fieldConfig": { "defaults": { "unit": "reqps", "custom": { "lineWidth": 2 } } },
+      "targets": [
+        { "expr": "sum by (exported_job) (increase(mpic_otel_sdk_span_started_total{exported_job=~\"mpic-(coordinator|caa-checker|dcv-checker)\"}[5m])) / 300", "legendFormat": "{{exported_job}}" }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "logs",
+      "title": "Service Logs (Trace-Friendly)",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 9 },
+      "datasource": { "uid": "loki", "type": "loki" },
+      "options": { "dedupStrategy": "none", "showLabels": false, "showTime": true, "sortOrder": "Descending", "wrapLogMessage": true },
+      "targets": [
+        { "expr": "{service_name=~\"mpic-(coordinator|caa-checker|dcv-checker)\"}", "legendFormat": "" }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "text",
+      "title": "Trace Workflow",
+      "gridPos": { "x": 0, "y": 17, "w": 24, "h": 7 },
+      "options": {
+        "mode": "markdown",
+        "content": "Use this dashboard for trace triage, then jump to Explore/Tempo for full flamegraph inspection.\n\n1. If span rate spikes or errors rise in the overview dashboard, open Explore and choose Tempo.\n2. Run TraceQL: `{ resource.service.name =~ \"mpic-.*\" }`.\n3. Open a trace and inspect the flamegraph span timeline.\n4. Use the log icon from spans to pivot into Loki around the span time window."
+      }
+    }
+  ]
+}

@@ -22,6 +22,20 @@ spec:
       containers:
         - image: ghcr.io/open-mpic/caa_checker:latest
           name: caa-checker
+          # Optional OpenTelemetry export settings:
+          # env:
+          #   - name: OTEL_TRACES_ENABLED
+          #     value: "true"
+          #   - name: OTEL_METRICS_ENABLED
+          #     value: "true"
+          #   - name: OTEL_LOGS_ENABLED
+          #     value: "true"
+          #   - name: OTEL_EXPORTER_OTLP_ENDPOINT
+          #     value: "http://otel-collector.observability.svc.cluster.local:4318"
+          #   - name: OTEL_SERVICE_NAME
+          #     value: "mpic-caa-checker"
+          #   - name: OTEL_RESOURCE_ATTRIBUTES
+          #     value: "deployment.environment=production"
           ports:
             - containerPort: 80
               protocol: TCP
