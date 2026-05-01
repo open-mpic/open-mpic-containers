@@ -20,8 +20,10 @@ datasources:
         tags:
           - key: service.name
             value: service_name
-        filterByTraceID: true
+        filterByTraceID: false
         filterBySpanID: false
+        spanStartTimeShift: "-2m"
+        spanEndTimeShift: "2m"
         customQuery: false
       tracesToMetrics:
         datasourceUid: prometheus
@@ -44,5 +46,10 @@ datasources:
         - datasourceUid: tempo
           matcherRegex: "\"trace_id\":\\s*\"([a-f0-9]{32})\""
           name: TraceID
+          url: "$${__value.raw}"
+          urlDisplayLabel: "View Trace in Tempo"
+        - datasourceUid: tempo
+          matcherRegex: "(?:trace_id|traceId)[=:\\s\"]+([a-f0-9]{32})"
+          name: TraceID (generic)
           url: "$${__value.raw}"
           urlDisplayLabel: "View Trace in Tempo"

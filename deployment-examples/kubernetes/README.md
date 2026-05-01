@@ -101,6 +101,43 @@ cd deployment-examples/kubernetes/open-mpic
 kustomize build . | kubectl apply -f -
 ```
 
+### 2a. Optional: Enable OpenTelemetry Export From MPIC Pods
+
+The Kubernetes examples run without OpenTelemetry by default. To export traces/metrics/logs from MPIC pods, add environment variables to each container in its `deploy.yaml`.
+
+Required variables:
+
+- `OTEL_TRACES_ENABLED=true`
+- `OTEL_METRICS_ENABLED=true`
+- `OTEL_LOGS_ENABLED=true`
+- `OTEL_EXPORTER_OTLP_ENDPOINT=http://<your-collector-service>:4318`
+- `OTEL_SERVICE_NAME=<service-name>`
+- `OTEL_RESOURCE_ATTRIBUTES=deployment.environment=<env>[,perspective.slot=<n>]`
+
+Example container env block:
+
+```yaml
+env:
+  - name: OTEL_TRACES_ENABLED
+    value: "true"
+  - name: OTEL_METRICS_ENABLED
+    value: "true"
+  - name: OTEL_LOGS_ENABLED
+    value: "true"
+  - name: OTEL_EXPORTER_OTLP_ENDPOINT
+    value: "http://otel-collector.observability.svc.cluster.local:4318"
+  - name: OTEL_SERVICE_NAME
+    value: "mpic-coordinator"
+  - name: OTEL_RESOURCE_ATTRIBUTES
+    value: "deployment.environment=production"
+```
+
+Notes:
+
+- `OTEL_EXPORTER_OTLP_ENDPOINT` must point to a reachable OTLP HTTP endpoint in your cluster.
+- If your platform injects endpoint variables automatically via admission webhook, you can omit that one variable.
+- The `OTEL_*_ENABLED` flags are application-specific and should be set explicitly.
+
 ### 3. Launch Kiali Dashboard
 
 ```sh
