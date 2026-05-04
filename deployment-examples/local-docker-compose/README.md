@@ -81,11 +81,11 @@ This is expected and does not mean tracing is broken.
 
 You can access your services using the following URLs:
 
-- http://localhost:8000/dcv-checker-1/dcv — DCV checker (instance 1)
-- http://localhost:8000/dcv-checker-2/dcv — DCV checker (instance 2)
-- http://localhost:8000/caa-checker-1/caa — CAA checker (instance 1)
-- http://localhost:8000/caa-checker-2/caa — CAA checker (instance 2)
-- http://localhost:8000/mpic-coordinator/mpic — coordinator (main entrypoint)
+- <http://localhost:8000/dcv-checker-1/dcv> — DCV checker (instance 1)
+- <http://localhost:8000/dcv-checker-2/dcv> — DCV checker (instance 2)
+- <http://localhost:8000/caa-checker-1/caa> — CAA checker (instance 1)
+- <http://localhost:8000/caa-checker-2/caa> — CAA checker (instance 2)
+- <http://localhost:8000/mpic-coordinator/mpic> — coordinator (main entrypoint)
 
 You can also access the Traefik dashboard at [http://localhost:8080/dashboard](http://localhost:8080/dashboard).
 
@@ -95,7 +95,7 @@ Two simple API calls that can be run from the local machine while docker compose
 
 (for a CAA query)
 
-```
+```sh
 curl -H 'Content-Type: application/json'\
       -d '{
   "check_type": "caa",
@@ -106,7 +106,8 @@ curl -H 'Content-Type: application/json'\
 ```
 
 (for a DCV query)
-```
+
+```sh
 curl -H 'Content-Type: application/json' \
       -d '{
   "check_type": "dcv",
