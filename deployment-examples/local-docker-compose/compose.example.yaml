@@ -10,8 +10,7 @@ services:
       - 172.28.0.2
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dcv1.rule=Host(`localhost`) &&
-        PathPrefix(`/dcv-checker-1`)"
+      - "traefik.http.routers.dcv1.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-1`)"
       - "traefik.http.services.dcv1.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_dcv1.stripprefix.prefixes=/dcv-checker-1"
       - "traefik.http.routers.dcv1.middlewares=strip_dcv1@docker"
@@ -32,8 +31,7 @@ services:
       - 172.28.0.2
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.dcv2.rule=Host(`localhost`) &&
-        PathPrefix(`/dcv-checker-2`)"
+      - "traefik.http.routers.dcv2.rule=Host(`localhost`) && PathPrefix(`/dcv-checker-2`)"
       - "traefik.http.services.dcv2.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_dcv2.stripprefix.prefixes=/dcv-checker-2"
       - "traefik.http.routers.dcv2.middlewares=strip_dcv2@docker"
@@ -49,11 +47,9 @@ services:
     image: ghcr.io/open-mpic/coordinator:latest
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.coordinator.rule=Host(`localhost`) &&
-        PathPrefix(`/mpic-coordinator`)"
+      - "traefik.http.routers.coordinator.rule=Host(`localhost`) && PathPrefix(`/mpic-coordinator`)"
       - "traefik.http.services.coordinator.loadbalancer.server.port=80"
-      - "traefik.http.middlewares.strip_coordinator.stripprefix.prefixes=/mpic-\
-        coordinator"
+      - "traefik.http.middlewares.strip_coordinator.stripprefix.prefixes=/mpic-coordinator"
       - "traefik.http.routers.coordinator.middlewares=strip_coordinator@docker"
     configs:
       - source: coordinator_config
@@ -74,8 +70,7 @@ services:
       - 172.28.0.2
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.caa1.rule=Host(`localhost`) &&
-        PathPrefix(`/caa-checker-1`)"
+      - "traefik.http.routers.caa1.rule=Host(`localhost`) && PathPrefix(`/caa-checker-1`)"
       - "traefik.http.services.caa1.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_caa1.stripprefix.prefixes=/caa-checker-1"
       - "traefik.http.routers.caa1.middlewares=strip_caa1@docker"
@@ -94,8 +89,7 @@ services:
       - 172.28.0.2
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.caa2.rule=Host(`localhost`) &&
-        PathPrefix(`/caa-checker-2`)"
+      - "traefik.http.routers.caa2.rule=Host(`localhost`) && PathPrefix(`/caa-checker-2`)"
       - "traefik.http.services.caa2.loadbalancer.server.port=80"
       - "traefik.http.middlewares.strip_caa2.stripprefix.prefixes=/caa-checker-2"
       - "traefik.http.routers.caa2.middlewares=strip_caa2@docker"
