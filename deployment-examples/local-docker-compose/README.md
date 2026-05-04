@@ -20,6 +20,30 @@ Use these compose files:
 - `compose.dev.yaml`: **recommended** local development workflow. Builds local service images and can optionally use a local `open-mpic-core-python` checkout.
 - `compose.otel.yaml`: telemetry overlay (Prometheus/Grafana/Tempo/Loki/Collector). Combine with either base file above.
 
+## Telemetry Configuration (Environment Variables)
+
+OpenTelemetry in the MPIC services is controlled by these environment variables:
+
+- `OTEL_TRACES_ENABLED`
+- `OTEL_METRICS_ENABLED`
+- `OTEL_LOGS_ENABLED`
+- `OTEL_EXPORTER_OTLP_ENDPOINT`
+- `OTEL_SERVICE_NAME`
+- `OTEL_RESOURCE_ATTRIBUTES`
+
+When you include `compose.otel.yaml`, these are already set for Coordinator, CAA Checker, and DCV Checker containers.
+
+Default values in this local stack:
+
+- `OTEL_TRACES_ENABLED=true`
+- `OTEL_METRICS_ENABLED=true`
+- `OTEL_LOGS_ENABLED=true`
+- `OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318`
+- `OTEL_SERVICE_NAME` set per service (for example `mpic-coordinator`)
+- `OTEL_RESOURCE_ATTRIBUTES` includes `deployment.environment=local` (and perspective slot for checker instances)
+
+If you do not include `compose.otel.yaml`, telemetry export is disabled by default.
+
 Baseline run (published images, no telemetry):
 
 ```sh
