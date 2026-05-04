@@ -25,12 +25,22 @@ from open_mpic_core import CaaCheckRequest
 from open_mpic_core import MpicCaaChecker
 from open_mpic_core import get_logger
 
+_otel_logging_handler: LoggingHandler | None = None
+
 
 def _env_bool(name: str, default: bool = False) -> bool:
     value = os.environ.get(name)
     if value is None:
         return default
     return value.lower() == "true"
+
+
+def _otel_any_signal_enabled() -> bool:
+    return (
+        _env_bool("OTEL_TRACES_ENABLED", False)
+        or _env_bool("OTEL_METRICS_ENABLED", False)
+        or _env_bool("OTEL_LOGS_ENABLED", False)
+    )
 
 
 def _otel_tracing_enabled() -> bool:
@@ -79,14 +89,23 @@ def _setup_telemetry(service_name: str) -> None:
         metrics.set_meter_provider(meter_provider)
 
     if logs_enabled:
+        global _otel_logging_handler
         logger_provider = LoggerProvider(resource=resource)
         logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
         set_logger_provider(logger_provider)
-        logging.getLogger().addHandler(LoggingHandler(level=logging.INFO, logger_provider=logger_provider))
+        if _otel_logging_handler is None:
+            _otel_logging_handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
+            logging.getLogger().addHandler(_otel_logging_handler)
 
 
 def _shutdown_telemetry() -> None:
     """Flush buffered telemetry and shut down SDK providers."""
+    global _otel_logging_handler
+    if _otel_logging_handler is not None:
+        logging.getLogger().removeHandler(_otel_logging_handler)
+        _otel_logging_handler.close()
+        _otel_logging_handler = None
+
     for provider in (trace.get_tracer_provider(), metrics.get_meter_provider(), get_logger_provider()):
         if hasattr(provider, "shutdown"):
             provider.shutdown()
@@ -143,7 +162,7 @@ async def lifespan(app_instance: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-if _otel_tracing_enabled():
+if _otel_any_signal_enabled():
     FastAPIInstrumentor.instrument_app(app)
 
 
