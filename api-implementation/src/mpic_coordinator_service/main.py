@@ -37,6 +37,7 @@ from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
 from open_mpic_core import RemotePerspective
 from open_mpic_core import get_logger
 
+
 def _env_bool(name: str, default: bool = False) -> bool:
     value = os.environ.get(name)
     if value is None:
