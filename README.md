@@ -22,6 +22,30 @@ Different deployments (see deployment examples) will wrap deploy these container
 
 ## Configuration Notes
 
+This section is the centralized configuration index for the repository.
+
+- Service configuration parameters (Coordinator, CAA Checker, DCV Checker): this document.
+- Local Docker Compose deployment-specific setup: see deployment-examples/local-docker-compose/README.md.
+- Kubernetes deployment-specific setup: see deployment-examples/kubernetes/README.md.
+
+### Telemetry Environment Variables
+
+OpenTelemetry support in the API services is controlled by environment variables.
+
+- OTEL_TRACES_ENABLED
+- OTEL_METRICS_ENABLED
+- OTEL_LOGS_ENABLED
+- OTEL_EXPORTER_OTLP_ENDPOINT
+- OTEL_SERVICE_NAME
+- OTEL_RESOURCE_ATTRIBUTES
+
+How these are applied by deployment type:
+
+- Local Docker Compose: deployment-examples/local-docker-compose/compose.otel.yaml sets these values for all MPIC services.
+- Kubernetes: deployment-examples/kubernetes/README.md documents the required env block and where to set it in deploy manifests.
+
+If traces and metrics are not appearing, verify that these variables are enabled and that OTEL_EXPORTER_OTLP_ENDPOINT points to a reachable OTLP HTTP endpoint.
+
 ### Configuration Parameters for Coordinator
 
 The Coordinator service is configured through multiple configuration files.
