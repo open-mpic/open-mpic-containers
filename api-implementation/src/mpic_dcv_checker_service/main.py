@@ -2,7 +2,6 @@ import importlib.metadata
 import logging
 import os
 import tomllib
-import importlib.metadata
 
 from contextlib import asynccontextmanager
 from pathlib import Path

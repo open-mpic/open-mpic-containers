@@ -2,7 +2,6 @@ import importlib.metadata
 import logging
 import os
 import tomllib
-import importlib.metadata
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI  # type: ignore
@@ -50,11 +49,11 @@ def _setup_telemetry(service_name: str) -> None:
                                     (default: http://otel-collector:4318; read by exporters automatically)
       OTEL_RESOURCE_ATTRIBUTES    - Extra resource labels, e.g. deployment.environment=dev
     """
-        traces_enabled = _env_bool("OTEL_TRACES_ENABLED", False)
-        metrics_enabled = _env_bool("OTEL_METRICS_ENABLED", False)
-        logs_enabled = _env_bool("OTEL_LOGS_ENABLED", False)
+    traces_enabled = _env_bool("OTEL_TRACES_ENABLED", False)
+    metrics_enabled = _env_bool("OTEL_METRICS_ENABLED", False)
+    logs_enabled = _env_bool("OTEL_LOGS_ENABLED", False)
 
-        if not (traces_enabled or metrics_enabled or logs_enabled):
+    if not (traces_enabled or metrics_enabled or logs_enabled):
         return
 
     try:
