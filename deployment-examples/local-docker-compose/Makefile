@@ -1,3 +1,6 @@
+SHELL := /bin/bash
+.SHELLFLAGS := -euo pipefail -c
+
 CONTAINER ?= open-mpic-coordinator-1
 ITERATIONS ?= 10
 DELAY ?= 0.2
@@ -69,8 +72,7 @@ traffic-dcv-invalid:
 	$(MAKE) traffic-controlled CHECK_TYPE=dcv OUTCOME=invalid ITERATIONS="$(ITERATIONS)" DELAY="$(DELAY)"
 
 otel-logs-demo:
-	@set -euo pipefail; \
-	compose_cmd='docker compose -f compose.dev.yaml -f compose.otel.yaml'; \
+	@compose_cmd='docker compose -f compose.dev.yaml -f compose.otel.yaml'; \
 	echo 'Stopping dcv_checker_1 to induce remote checker warnings...'; \
 	$$compose_cmd stop dcv_checker_1 >/dev/null; \
 	cleanup() { \
