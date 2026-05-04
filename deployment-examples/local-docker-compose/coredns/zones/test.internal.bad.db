@@ -8,7 +8,7 @@ $TTL 60
   60         ; minimum
 )
 @ IN NS ns1.test.internal.
-ns1 IN A 172.31.250.54
+ns1 IN A 172.28.0.54
 
 ; Deterministic "bad" answers for local MPIC tests.
 _acme-challenge.good IN TXT "token-bad"

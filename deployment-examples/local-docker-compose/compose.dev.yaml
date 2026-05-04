@@ -29,7 +29,7 @@ services:
     environment:
       code: example-region-1
     dns:
-      - 172.31.250.53
+      - 172.28.0.53
       - 172.28.0.2
     labels:
       - "traefik.enable=true"
@@ -57,7 +57,7 @@ services:
     environment:
       code: example-region-2
     dns:
-      - 172.31.250.54
+      - 172.28.0.54
       - 172.28.0.2
     labels:
       - "traefik.enable=true"
@@ -110,7 +110,7 @@ services:
     volumes:
       - *local-core-volume
     dns:
-      - 172.31.250.53
+      - 172.28.0.53
       - 172.28.0.2
     labels:
       - "traefik.enable=true"
@@ -136,7 +136,7 @@ services:
     volumes:
       - *local-core-volume
     dns:
-      - 172.31.250.54
+      - 172.28.0.54
       - 172.28.0.2
     labels:
       - "traefik.enable=true"
@@ -171,7 +171,7 @@ services:
       - ./coredns/zones:/zones:ro
     networks:
       default:
-        ipv4_address: 172.31.250.53
+        ipv4_address: 172.28.0.53
 
   coredns_bad:
     image: coredns/coredns:1.11.1
@@ -181,7 +181,7 @@ services:
       - ./coredns/zones:/zones:ro
     networks:
       default:
-        ipv4_address: 172.31.250.54
+        ipv4_address: 172.28.0.54
 
   traefik:
     image: traefik:v2.9
@@ -209,7 +209,6 @@ networks:
         - subnet: 172.28.0.0/16
           gateway: 172.28.0.1
           ip_range: 172.28.5.0/24
-        - subnet: 172.31.250.0/24
 
 configs:
   dcv_config_1:
