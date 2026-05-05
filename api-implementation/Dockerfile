@@ -19,6 +19,9 @@ WORKDIR /app
 # Copy just pyproject.toml first for better layer caching
 COPY pyproject.toml .
 
+# Copy shared utility modules used by all services
+COPY src/mpic_observability_util.py .
+
 # Copy the specific service code
 COPY ${SERVICE_PATH} .
 
@@ -28,9 +31,9 @@ RUN hatch env create production
 # Install additional dependencies
 RUN hatch env run -e production -- pip install PyYAML
 
-# Upgrade pip packaging tools to latest to pick up any security fixes in
-# pip/setuptools/wheel that may be bundled in the base Python image
-RUN hatch env run -e production -- pip install --upgrade pip setuptools wheel
+# Keep setuptools below versions that remove pkg_resources, which is still
+# imported by currently pinned opentelemetry instrumentation packages.
+RUN hatch env run -e production -- pip install --upgrade pip "setuptools<81" wheel
 
 # ===== RUNTIME STAGE =====
 FROM python:${PYTHON_VERSION}
@@ -39,7 +42,7 @@ FROM python:${PYTHON_VERSION}
 RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --upgrade pip setuptools wheel
+    && pip install --upgrade pip "setuptools<81" wheel
 
 # Note: System Python's pip/setuptools/wheel are upgraded to satisfy Trivy's vulnerability
 # scanning, though the venv's versions (upgraded in the builder stage) take precedence at
