@@ -12,11 +12,13 @@ QUORUM_COUNT ?= 2
 LOCAL_CORE_PATH ?=
 COMPOSE_CMD ?= docker compose -f compose.dev.yaml -f compose.otel.yaml
 
-.PHONY: help teardown teardown-wipe traffic traffic-random traffic-mixed-caa traffic-controlled traffic-caa-valid traffic-caa-invalid traffic-dcv-valid traffic-dcv-invalid otel-demo otel-demo-pypi otel-demo-local
+.PHONY: help up up-local teardown teardown-wipe traffic traffic-random traffic-mixed-caa traffic-controlled traffic-caa-valid traffic-caa-invalid traffic-dcv-valid traffic-dcv-invalid otel-demo otel-demo-pypi otel-demo-local
 
 help:
 	@printf "Local Docker Compose helpers\n\n"
 	@printf "Lifecycle:\n"
+	@printf "  make up                # build images and start the full stack (services + observability)\n"
+	@printf "  make up-local          # same as up, using a local open-mpic-core checkout (set LOCAL_CORE_PATH)\n\n"
 	@printf "  make teardown          # stop and remove local dev + otel compose resources\n\n"
 	@printf "  make teardown-wipe     # same as teardown, plus remove compose volumes\n\n"
 	@printf "Traffic generation:\n"
@@ -39,6 +41,23 @@ help:
 	@printf "  make traffic CONTAINER=open-mpic-coordinator-1\n"
 	@printf "  make otel-demo ITERATIONS=8 DELAY=0.05\n"
 	@printf "  make otel-demo-local LOCAL_CORE_PATH=../../../../open-mpic-core-python\n"
+	@printf "\n"
+	@printf "Quickstart:\n"
+	@printf "  make up && make otel-demo-pypi\n"
+
+up:
+	@echo 'Building images and starting the full stack (this may take a few minutes on first run)...'
+	@$(COMPOSE_CMD) up -d --wait --build
+	@echo 'Stack is up.'
+
+up-local:
+	@if [[ -z "$(LOCAL_CORE_PATH)" ]]; then \
+		echo 'LOCAL_CORE_PATH is required for up-local (e.g. make up-local LOCAL_CORE_PATH=../../../../open-mpic-core-python)'; \
+		exit 1; \
+	fi
+	@echo 'Building images and starting the full stack with local open-mpic-core...'
+	@LOCAL_CORE_PATH="$(LOCAL_CORE_PATH)" $(COMPOSE_CMD) up -d --wait --build
+	@echo 'Stack is up.'
 
 teardown:
 	@$(COMPOSE_CMD) down --remove-orphans
@@ -99,7 +118,7 @@ otel-demo:
 		--check-type both \
 		--outcome valid \
 		--perspective-count "$(PERSPECTIVE_COUNT)" \
-		--quorum-count "$(QUORUM_COUNT)" >/dev/null; \
+		--quorum-count "$(QUORUM_COUNT)" >/dev/null && \
 	echo 'OTEL telemetry should now be present in recent Grafana/Loki/Tempo views.'
 
 otel-demo-pypi:

@@ -6,7 +6,7 @@ name: open-mpic
 # - Defaults to pinned open-mpic-core from pyproject.toml (PyPI package)
 # - Uses local open-mpic-core-python only when LOCAL_CORE_PATH is explicitly set
 
-x-local-core-command: &local-core-command
+x-mpic-service: &mpic-service
   command: >
     sh -c "if [ '${LOCAL_CORE_PATH:+set}' = 'set' ] && [ -f /local/open-mpic-core/pyproject.toml ]; then
              echo 'Using local open-mpic-core from /local/open-mpic-core';
@@ -26,7 +26,7 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_dcv_checker_service"
-    <<: *local-core-command
+    <<: *mpic-service
     volumes:
       - *local-core-volume
     environment:
@@ -54,7 +54,7 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_dcv_checker_service"
-    <<: *local-core-command
+    <<: *mpic-service
     volumes:
       - *local-core-volume
     environment:
@@ -82,7 +82,7 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_coordinator_service"
-    <<: *local-core-command
+    <<: *mpic-service
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.coordinator.rule=Host(`localhost`) &&
@@ -109,7 +109,7 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_caa_checker_service"
-    <<: *local-core-command
+    <<: *mpic-service
     volumes:
       - *local-core-volume
     dns:
@@ -135,7 +135,7 @@ services:
       context: ../../api-implementation
       args:
         SERVICE_PATH: "src/mpic_caa_checker_service"
-    <<: *local-core-command
+    <<: *mpic-service
     volumes:
       - *local-core-volume
     dns:
@@ -202,7 +202,7 @@ services:
       - 172.28.0.2
 
 volumes:
-  local-core-empty:  # empty fallback when LOCAL_CORE_PATH is not set
+  local-core-empty: # empty fallback when LOCAL_CORE_PATH is not set
 
 networks:
   default:
