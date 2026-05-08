@@ -28,12 +28,7 @@ COPY ${SERVICE_PATH} .
 # Create production environment and install dependencies
 RUN hatch env create production
 
-# Install additional dependencies
-RUN hatch env run -e production -- pip install PyYAML
-
-# Keep setuptools below versions that remove pkg_resources, which is still
-# imported by currently pinned opentelemetry instrumentation packages.
-RUN hatch env run -e production -- pip install --upgrade pip "setuptools<81" wheel
+RUN hatch env run -e production -- pip install --upgrade pip wheel
 
 # ===== RUNTIME STAGE =====
 FROM python:${PYTHON_VERSION}
@@ -42,10 +37,10 @@ FROM python:${PYTHON_VERSION}
 RUN apt-get update && apt-get dist-upgrade -y && apt-get install -y --no-install-recommends \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --upgrade pip "setuptools<81" wheel
+    && pip install --upgrade pip setuptools wheel
 
 # Note: System Python's pip/setuptools/wheel are upgraded to satisfy Trivy's vulnerability
-# scanning, though the venv's versions (upgraded in the builder stage) take precedence at
+# scanning, though the venv's versions (installed in the builder stage) take precedence at
 # runtime via PATH=/venv/bin:$PATH. This ensures Trivy passes while keeping the active
 # runtime clean.
 

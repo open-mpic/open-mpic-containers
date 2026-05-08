@@ -118,10 +118,15 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
 
-      - name: Upgrade pip
-        run: pip install --upgrade pip
+      - name: Install hatch
+        run: pip install hatch
 
-      - name: Dry-run dependency resolution
-        run: pip install --dry-run api-implementation/
+      - name: Create production environment
+        working-directory: api-implementation
+        run: hatch env create production
+
+      - name: Validate installed dependency graph
+        working-directory: api-implementation
+        run: hatch env run -e production -- pip check
