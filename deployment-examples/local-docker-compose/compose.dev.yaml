@@ -3,19 +3,22 @@ name: open-mpic
 # Single-file local development compose:
 # - Builds services from local api-implementation sources
 # - Keeps split-DNS CoreDNS wiring for deterministic valid/invalid traffic
-# - Optionally uses local open-mpic-core-python when present at OPEN_MPIC_CORE_PATH
+# - Defaults to pinned open-mpic-core from pyproject.toml (PyPI package)
+# - Uses local open-mpic-core-python only when LOCAL_CORE_PATH is explicitly set
 
 x-local-core-command: &local-core-command
   command: >
-    sh -c "if [ -f /local/open-mpic-core/pyproject.toml ]; then
+    sh -c "if [ '${LOCAL_CORE_PATH:+set}' = 'set' ] && [ -f /local/open-mpic-core/pyproject.toml ]; then
              echo 'Using local open-mpic-core from /local/open-mpic-core';
              hatch env run -e production -- pip install -q -e /local/open-mpic-core;
+           elif [ '${LOCAL_CORE_PATH:+set}' = 'set' ]; then
+             echo 'LOCAL_CORE_PATH was set but /local/open-mpic-core/pyproject.toml was not found; using pinned core package from PyPI';
            else
-             echo 'Local open-mpic-core not found; using image-pinned core package';
+             echo 'Using pinned core package from pyproject.toml (PyPI)';
            fi &&
            hatch env run -e production -- uvicorn main:app --host 0.0.0.0 --port 80 --proxy-headers --log-config /app/config/log_config.yaml"
 
-x-local-core-volume: &local-core-volume ${OPEN_MPIC_CORE_PATH:-../../../open-mpic-core-python}:/local/open-mpic-core:ro
+x-local-core-volume: &local-core-volume ${LOCAL_CORE_PATH:-/tmp}:/local/open-mpic-core:ro
 
 services:
   dcv_checker_1:
