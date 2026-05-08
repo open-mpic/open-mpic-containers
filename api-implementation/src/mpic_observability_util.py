@@ -47,6 +47,11 @@ def setup_telemetry(service_name: str) -> None:
         return
 
     try:
+        api_version = importlib.metadata.version("open-mpic-restapi-server")
+    except importlib.metadata.PackageNotFoundError:
+        api_version = "unknown"
+
+    try:
         core_version = importlib.metadata.version("open-mpic-core")
     except importlib.metadata.PackageNotFoundError:
         core_version = "unknown"
@@ -54,7 +59,8 @@ def setup_telemetry(service_name: str) -> None:
     resource = Resource.create(
         {
             SERVICE_NAME: os.environ.get("OTEL_SERVICE_NAME", service_name),
-            SERVICE_VERSION: core_version,
+            SERVICE_VERSION: api_version,
+            "open_mpic_core.version": core_version,
         }
     )
 

@@ -18,7 +18,7 @@ x-local-core-command: &local-core-command
            fi &&
            hatch env run -e production -- uvicorn main:app --host 0.0.0.0 --port 80 --proxy-headers --log-config /app/config/log_config.yaml"
 
-x-local-core-volume: &local-core-volume ${LOCAL_CORE_PATH:-/tmp}:/local/open-mpic-core:ro
+x-local-core-volume: &local-core-volume ${LOCAL_CORE_PATH:-local-core-empty}:/local/open-mpic-core:ro
 
 services:
   dcv_checker_1:
@@ -200,6 +200,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     dns:
       - 172.28.0.2
+
+volumes:
+  local-core-empty:  # empty fallback when LOCAL_CORE_PATH is not set
 
 networks:
   default:

@@ -1,10 +1,7 @@
 # OpenTelemetry observability stack overlay for local development.
 #
 # Usage:
-#   docker compose -f compose.example.yaml -f compose.otel.yaml up
-#
-# Or with locally-built images:
-#   docker compose -f compose.build.example.yaml -f compose.otel.yaml up
+#   docker compose -f compose.dev.yaml -f compose.otel.yaml up
 #
 # Adds to every MPIC service:
 #   - OTEL_EXPORTER_OTLP_ENDPOINT pointing at the local collector
