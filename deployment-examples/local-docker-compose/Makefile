@@ -12,7 +12,7 @@ QUORUM_COUNT ?= 2
 LOCAL_CORE_PATH ?=
 COMPOSE_CMD ?= docker compose -f compose.dev.yaml -f compose.otel.yaml
 
-.PHONY: help teardown teardown-wipe traffic traffic-random traffic-mixed-caa traffic-controlled traffic-caa-valid traffic-caa-invalid traffic-dcv-valid traffic-dcv-invalid otel-demo otel-demo-pypi otel-demo-local otel-logs-demo otel-logs-demo-pypi otel-logs-demo-local
+.PHONY: help teardown teardown-wipe traffic traffic-random traffic-mixed-caa traffic-controlled traffic-caa-valid traffic-caa-invalid traffic-dcv-valid traffic-dcv-invalid otel-demo otel-demo-pypi otel-demo-local
 
 help:
 	@printf "Local Docker Compose helpers\n\n"
@@ -32,7 +32,6 @@ help:
 	@printf "Aliases:\n"
 	@printf "  make otel-demo-pypi            # same as otel-demo (pinned open-mpic-core PyPI package)\n"
 	@printf "  make otel-demo-local           # healthy-path demo using local editable open-mpic-core\n"
-	@printf "  make otel-logs-demo*           # backward-compatible aliases\n"
 	@printf "\n"
 	@printf "Overrides:\n"
 	@printf "  make traffic ITERATIONS=50 DELAY=0.1\n"
@@ -112,13 +111,3 @@ otel-demo-local:
 		exit 1; \
 	fi
 	@LOCAL_CORE_PATH="$(LOCAL_CORE_PATH)" $(MAKE) otel-demo
-
-# Backward-compatible aliases.
-otel-logs-demo:
-	@$(MAKE) otel-demo
-
-otel-logs-demo-pypi:
-	@$(MAKE) otel-demo-pypi
-
-otel-logs-demo-local:
-	@LOCAL_CORE_PATH="$(LOCAL_CORE_PATH)" $(MAKE) otel-demo-local
