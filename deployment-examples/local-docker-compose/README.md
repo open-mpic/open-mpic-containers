@@ -17,7 +17,7 @@ This guide will help you set up and run all MPIC services using Docker Compose a
 Use these compose files:
 
 - `compose.example.yaml`: baseline stack using published GHCR images.
-- `compose.dev.yaml`: **recommended** local development workflow. Builds local service images and can optionally use a local `open-mpic-core-python` checkout.
+- `compose.dev.yaml`: **recommended** local development workflow. Builds local service images and defaults to the pinned `open-mpic-core` package from `pyproject.toml` (PyPI).
 - `compose.otel.yaml`: telemetry overlay (Prometheus/Grafana/Tempo/Loki/Collector). Combine with either base file above.
 
 ## Telemetry Configuration (Environment Variables)
@@ -53,14 +53,13 @@ docker compose -f compose.example.yaml up -d
 Recommended local dev run (single base file + telemetry overlay):
 
 ```sh
-OPEN_MPIC_CORE_PATH=../../../open-mpic-core-python \
 docker compose -f compose.dev.yaml -f compose.otel.yaml up -d --build
 ```
 
 `compose.dev.yaml` works in both cases:
 
-- With local core checkout present at `OPEN_MPIC_CORE_PATH`: container startup installs that local core checkout.
-- Without local core checkout: startup falls back to the image-pinned core package and still runs.
+- Default (no `LOCAL_CORE_PATH`): container startup uses the pinned core package from `pyproject.toml` (PyPI).
+- With `LOCAL_CORE_PATH` set: container startup installs that local core checkout (editable install).
 
 This command starts the services and Traefik routes traffic through a single entrypoint.
 
@@ -69,7 +68,13 @@ This command starts the services and Traefik routes traffic through a single ent
 Bring up the full local stack (services + Grafana/Prometheus/Loki/Tempo):
 
 ```sh
-OPEN_MPIC_CORE_PATH=../../../open-mpic-core-python \
+docker compose -f compose.dev.yaml -f compose.otel.yaml up -d --build
+```
+
+To use a local core checkout instead of pinned PyPI:
+
+```sh
+LOCAL_CORE_PATH=../../../open-mpic-core-python \
 docker compose -f compose.dev.yaml -f compose.otel.yaml up -d --build
 ```
 
