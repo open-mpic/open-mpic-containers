@@ -107,3 +107,21 @@ jobs:
           echo "Fix: set [project].version = \"${{ steps.validate-version.outputs.expected-version }}\" in api-implementation/pyproject.toml" >&2
           echo "     and add a release:patch / release:minor / release:major label as appropriate." >&2
           exit 1
+
+  Validate-Dependencies:
+    name: Validate dependency resolvability
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Upgrade pip
+        run: pip install --upgrade pip
+
+      - name: Dry-run dependency resolution
+        run: pip install --dry-run api-implementation/
