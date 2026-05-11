@@ -102,16 +102,6 @@ template = "default"
 [tool.hatch.envs.test]
 template = "default"
 
-[tool.hatch.envs.test.scripts]
-pre-install = "python -m ensurepip"
-unit = "pytest"
-unit-html = "pytest --html=testreports/index.html" # generate html report (warning: uses an aging plugin, 11-2023)
-integration = "pytest tests/integration"
-coverage = "pytest --cov=src --cov-report=term-missing --cov-report=html"
-# defaults to http://localhost:8000/mpic-coordinator, change host by adding "-h <hostname>" to the command
-# example: hatch run test:load -h http://my-mpic-coordinator/
-load = "locust -f tests/load/locustfile.py {args}"
-
 [tool.hatch.envs.hatch-test]
 default-args = ["tests/unit"]
 randomize = true

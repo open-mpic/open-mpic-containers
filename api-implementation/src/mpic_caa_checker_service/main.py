@@ -15,12 +15,13 @@ from mpic_observability_util import otel_any_signal_enabled, setup_telemetry, sh
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
-load_dotenv(config_path)
 logger = get_logger(__name__)
 
 
 class MpicCaaCheckerService:
     def __init__(self):
+        load_dotenv(config_path)
+
         # FIXME warn on default_caa_domain_list None or empty
         self.default_caa_domain_list = os.environ["default_caa_domains"].split("|")
         self.dns_timeout_seconds = (
