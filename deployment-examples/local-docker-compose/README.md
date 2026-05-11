@@ -11,6 +11,16 @@ This guide will help you set up and run all MPIC services using Docker Compose a
 ## Setup
 
 1. Copy `resources/available_perspectives.example.yaml` to `resources/available_perspectives.yaml`
+2. Copy `common_config/uvicorn_config.example.yaml` to `common_config/uvicorn_config.yaml`
+3. Copy `common_config/log_config.example.yaml` to `common_config/log_config.yaml`
+
+You can do all setup copies at once:
+
+```sh
+cp resources/available_perspectives.example.yaml resources/available_perspectives.yaml
+cp common_config/uvicorn_config.example.yaml common_config/uvicorn_config.yaml
+cp common_config/log_config.example.yaml common_config/log_config.yaml
+```
 
 ## Running the Services
 
