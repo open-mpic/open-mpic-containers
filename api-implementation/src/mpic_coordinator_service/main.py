@@ -33,7 +33,6 @@ from mpic_observability_util import (
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
-load_dotenv(config_path)
 logger = get_logger(__name__)
 
 
@@ -49,6 +48,8 @@ class PerspectiveEndpoints(BaseModel):
 
 class MpicCoordinatorService:
     def __init__(self):
+        load_dotenv(config_path)
+
         # load environment variables
         perspectives_json = os.environ["perspectives"]
         perspectives = {
