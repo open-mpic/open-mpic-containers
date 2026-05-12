@@ -170,6 +170,9 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
+# VS Code coverage-gutter artifact
+api-implementation/coverage/lcov.info
+
 # PyCharm
 #  JetBrains specific template is maintained in a separate JetBrains.gitignore that can
 #  be found at https://github.com/github/gitignore/blob/main/Global/JetBrains.gitignore
