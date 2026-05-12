@@ -119,6 +119,17 @@ class TestMpicCoordinatorService:
         finally:
             await service.shutdown()
 
+    async def call_remote_perspective__should_raise_runtime_error_when_service_not_initialized(self, set_env_variables):
+        service = MpicCoordinatorService()
+        dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
+
+        with pytest.raises(RuntimeError, match="Service not initialized - call initialize\(\) first"):
+            await service.call_remote_perspective(
+                RemotePerspective(code="test-1", rir=RegionalInternetRegistry.ARIN),
+                CheckType.DCV,
+                dcv_check_request,
+            )
+
     def service__should_read_in_environment_configuration_through_config_file(self, set_some_env_variables):
         mpic_coordinator_service = MpicCoordinatorService()
         # it'll read in the placeholder values in the config files -- that's acceptable for this particular test
