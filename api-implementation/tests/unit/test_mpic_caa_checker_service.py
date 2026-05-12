@@ -1,3 +1,4 @@
+import importlib
 import dns
 import time
 import pytest
@@ -62,6 +63,22 @@ class TestMpicCaaCheckerService:
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {"status": "healthy"}
+
+    def service__should_instrument_fastapi_when_otel_signal_enabled(self, monkeypatch, mocker):
+        monkeypatch.setenv("OTEL_TRACES_ENABLED", "true")
+        instrument_app_mock = mocker.patch(
+            "opentelemetry.instrumentation.fastapi.FastAPIInstrumentor.instrument_app"
+        )
+
+        importlib.reload(main_module)
+
+        instrument_app_mock.assert_called_once_with(main_module.app)
+
+        # Restore module in non-instrumented mode to avoid import-time state leaking to other tests.
+        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
+        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
+        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
+        importlib.reload(main_module)
 
     def service__should_set_log_level_of_caa_checker(self, setup_logging, mocker):
         caa_check_request = ValidCheckCreator.create_valid_caa_check_request()
