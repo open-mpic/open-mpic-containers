@@ -1,3 +1,4 @@
+import importlib
 import time
 import re
 import pytest
@@ -87,6 +88,20 @@ class TestMpicDcvCheckerService:
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {"status": "healthy"}
 
+    def service__should_instrument_fastapi_when_otel_signal_enabled(self, monkeypatch, mocker):
+        monkeypatch.setenv("OTEL_TRACES_ENABLED", "true")
+        instrument_app_mock = mocker.patch("opentelemetry.instrumentation.fastapi.FastAPIInstrumentor.instrument_app")
+
+        importlib.reload(main_module)
+
+        instrument_app_mock.assert_called_once_with(main_module.app)
+
+        # Restore module in non-instrumented mode to avoid import-time state leaking to other tests.
+        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
+        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
+        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
+        importlib.reload(main_module)
+
     def service__should_set_log_level_of_dcv_checker(self, mocker, setup_logging):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()
         check_response = TestMpicDcvCheckerService.create_dcv_check_response()
@@ -102,6 +117,12 @@ class TestMpicDcvCheckerService:
         service = main_module.MpicDcvCheckerService()
         assert service.dcv_checker.resolver.timeout == 1.0  # default is 2.0
         assert service.dcv_checker.resolver.lifetime == 2.0  # default is 5.0
+
+    def service__should_raise_error_given_pyproject_toml_not_found(self, mocker):
+        mocker.patch("pathlib.Path.exists", return_value=False)
+        with TestClient(main_module.app, raise_server_exceptions=False) as client:
+            response = client.get("/configz")
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     def service__should_return_app_config_diagnostics_given_diagnostics_request(self, set_env_variables):
         with TestClient(main_module.app) as client:
