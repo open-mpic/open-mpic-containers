@@ -99,6 +99,12 @@ class TestMpicCaaCheckerService:
         assert service.caa_checker.resolver.timeout == 1.0  # default is 2.0
         assert service.caa_checker.resolver.lifetime == 2.0  # default is 5.0
 
+    def service__should_raise_error_given_pyproject_toml_not_found(self, mocker):
+        mocker.patch("pathlib.Path.exists", return_value=False)
+        with TestClient(main_module.app, raise_server_exceptions=False) as client:
+            response = client.get("/configz")
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
     def service__should_return_app_config_diagnostics_given_diagnostics_request(self, set_env_variables):
         with TestClient(main_module.app) as client:
             response = client.get("/configz")
