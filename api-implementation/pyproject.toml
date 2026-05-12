@@ -84,6 +84,7 @@ unit = "pytest"
 unit-html = "pytest --html=testreports/index.html" # generate html report (warning: uses an aging plugin, 11-2023)
 integration = "pytest tests/integration"
 coverage = "pytest --cov=src --cov-report=term-missing --cov-report=html"
+coverage-vscode = "pytest --cov=src --cov-report=term-missing --cov-report=html --cov-report=lcov:coverage/lcov.info && python _utility/rewrite_lcov_paths.py coverage/lcov.info api-implementation"
 # defaults to http://localhost:8000/mpic-coordinator, change host by adding "-h <hostname>" to the command
 # example: hatch run test:load -h http://my-mpic-coordinator/
 load = "locust -f tests/load/locustfile.py {args}"

@@ -1,5 +1,6 @@
 {
     "recommendations": [
+        "markis.code-coverage",
         "ms-python.black-formatter",
         "redhat.vscode-yaml"
     ]
