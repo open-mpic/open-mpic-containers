@@ -66,9 +66,7 @@ class TestMpicCaaCheckerService:
 
     def service__should_instrument_fastapi_when_otel_signal_enabled(self, monkeypatch, mocker):
         monkeypatch.setenv("OTEL_TRACES_ENABLED", "true")
-        instrument_app_mock = mocker.patch(
-            "opentelemetry.instrumentation.fastapi.FastAPIInstrumentor.instrument_app"
-        )
+        instrument_app_mock = mocker.patch("opentelemetry.instrumentation.fastapi.FastAPIInstrumentor.instrument_app")
 
         importlib.reload(main_module)
 
