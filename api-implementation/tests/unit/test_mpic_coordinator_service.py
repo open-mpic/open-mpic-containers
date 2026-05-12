@@ -278,6 +278,12 @@ class TestMpicCoordinatorService:
         # uvicorn_server_timeout_keep_alive would be better checked in an integration test (can mock it though)
         assert config["uvicorn_server_timeout_keep_alive"] == 25
 
+    def service__should_raise_error_given_pyproject_toml_not_found(self, set_env_variables, mocker):
+        mocker.patch("pathlib.Path.exists", return_value=False)
+        with TestClient(app, raise_server_exceptions=False) as client:
+            response = client.get("/configz")
+        assert response.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
     @staticmethod
     def get_perspectives_by_code_dict_from_file() -> dict[str, RemotePerspective]:
         with resources.files("resources").joinpath("available_test_perspectives.yaml").open("r") as file:
