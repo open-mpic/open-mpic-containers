@@ -24,7 +24,7 @@ env:
   COVERAGE_MINIMUM: "100"
 
 jobs:
-  unit-tests-and-coverage:
+  Tests:
     name: Unit tests and coverage gate
     runs-on: ubuntu-latest
     defaults:
