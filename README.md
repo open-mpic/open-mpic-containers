@@ -1,5 +1,9 @@
 # open-mpic-containers
 
+[![Tests](https://github.com/open-mpic/open-mpic-containers/actions/workflows/tests.yml/badge.svg?branch=main)](https://github.com/open-mpic/open-mpic-containers/actions/workflows/tests.yml)
+<!-- Pytest Coverage Comment:Begin -->
+<!-- Pytest Coverage Comment:End -->
+
 Implements a FastAPI wrapper for Open MPIC using Docker.
 Built on [open-mpic-core-python](https://github.com/open-mpic/open-mpic-core-python).
 
