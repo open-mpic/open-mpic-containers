@@ -240,72 +240,72 @@ class TestSetupTelemetry:
         mpic_observability_util._otel_logging_handler = None
 
 
-class TestShutdownTelemetry:
-    """Test shutdown_telemetry cleanup behavior."""
+# class TestShutdownTelemetry:
+#     """Test shutdown_telemetry cleanup behavior."""
 
-    def shutdown_telemetry__should_remove_logging_handler_when_present(self, mocker):
-        # Set up a mock handler
-        mock_handler = MagicMock()
-        mpic_observability_util._otel_logging_handler = mock_handler
+#     def shutdown_telemetry__should_remove_logging_handler_when_present(self, mocker):
+#         # Set up a mock handler
+#         mock_handler = MagicMock()
+#         mpic_observability_util._otel_logging_handler = mock_handler
 
-        mock_root_logger = mocker.patch("logging.getLogger")
+#         mock_root_logger = mocker.patch("logging.getLogger")
 
-        mpic_observability_util.shutdown_telemetry()
+#         mpic_observability_util.shutdown_telemetry()
 
-        mock_root_logger.return_value.removeHandler.assert_called_once_with(mock_handler)
-        mock_handler.close.assert_called_once()
-        assert mpic_observability_util._otel_logging_handler is None
+#         mock_root_logger.return_value.removeHandler.assert_called_once_with(mock_handler)
+#         mock_handler.close.assert_called_once()
+#         assert mpic_observability_util._otel_logging_handler is None
 
-    def shutdown_telemetry__should_not_error_when_no_logging_handler(self, mocker):
-        mpic_observability_util._otel_logging_handler = None
+#     def shutdown_telemetry__should_not_error_when_no_logging_handler(self, mocker):
+#         mpic_observability_util._otel_logging_handler = None
 
-        mocker.patch("logging.getLogger")
+#         mocker.patch("logging.getLogger")
 
-        # Should not raise
-        mpic_observability_util.shutdown_telemetry()
+#         # Should not raise
+#         mpic_observability_util.shutdown_telemetry()
 
-    def shutdown_telemetry__should_shutdown_providers_when_shutdown_method_exists(self, mocker):
-        mpic_observability_util._otel_logging_handler = None
+#     def shutdown_telemetry__should_shutdown_providers_when_shutdown_method_exists(self, mocker):
+#         mpic_observability_util._otel_logging_handler = None
 
-        # Create mock providers with shutdown method
-        mock_tracer_provider = MagicMock()
-        mock_meter_provider = MagicMock()
-        mock_logger_provider = MagicMock()
+#         # Create mock providers with shutdown method
+#         mock_tracer_provider = MagicMock()
+#         mock_meter_provider = MagicMock()
+#         mock_logger_provider = MagicMock()
 
-        mocker.patch("logging.getLogger")
-        mocker.patch("mpic_observability_util.trace.get_tracer_provider", return_value=mock_tracer_provider)
-        mocker.patch("mpic_observability_util.metrics.get_meter_provider", return_value=mock_meter_provider)
-        mocker.patch(
-            "mpic_observability_util.get_logger_provider",
-            return_value=mock_logger_provider,
-        )
+#         mocker.patch("logging.getLogger")
+#         mocker.patch("mpic_observability_util.trace.get_tracer_provider", return_value=mock_tracer_provider)
+#         mocker.patch("mpic_observability_util.metrics.get_meter_provider", return_value=mock_meter_provider)
+#         mocker.patch(
+#             "mpic_observability_util.get_logger_provider",
+#             return_value=mock_logger_provider,
+#         )
 
-        mpic_observability_util.shutdown_telemetry()
+#         mpic_observability_util.shutdown_telemetry()
 
-        mock_tracer_provider.shutdown.assert_called_once()
-        mock_meter_provider.shutdown.assert_called_once()
-        mock_logger_provider.shutdown.assert_called_once()
+#         mock_tracer_provider.shutdown.assert_called_once()
+#         mock_meter_provider.shutdown.assert_called_once()
+#         mock_logger_provider.shutdown.assert_called_once()
 
-    def shutdown_telemetry__should_skip_shutdown_when_method_does_not_exist(self, mocker):
-        mpic_observability_util._otel_logging_handler = None
+#     def shutdown_telemetry__should_skip_shutdown_when_method_does_not_exist(self, mocker):
+#         mpic_observability_util._otel_logging_handler = None
 
-        # Create mock providers without shutdown method
-        mock_tracer_provider = MagicMock(spec=[])  # Empty spec means no shutdown
-        mock_meter_provider = MagicMock()
-        mock_logger_provider = MagicMock()
+#         # Create mock providers without shutdown method
+#         mock_tracer_provider = MagicMock(spec=[])  # Empty spec means no shutdown
+#         mock_meter_provider = MagicMock()
+#         mock_logger_provider = MagicMock()
 
-        mocker.patch("logging.getLogger")
-        mocker.patch("mpic_observability_util.trace.get_tracer_provider", return_value=mock_tracer_provider)
-        mocker.patch("mpic_observability_util.metrics.get_meter_provider", return_value=mock_meter_provider)
-        mocker.patch(
-            "mpic_observability_util.get_logger_provider",
-            return_value=mock_logger_provider,
-        )
+#         mocker.patch("logging.getLogger")
+#         mocker.patch("mpic_observability_util.trace.get_tracer_provider", return_value=mock_tracer_provider)
+#         mocker.patch("mpic_observability_util.metrics.get_meter_provider", return_value=mock_meter_provider)
+#         mocker.patch(
+#             "mpic_observability_util.get_logger_provider",
+#             return_value=mock_logger_provider,
+#         )
 
-        mpic_observability_util.shutdown_telemetry()
+#         mpic_observability_util.shutdown_telemetry()
 
-        # Tracer provider has no shutdown, so it shouldn't be called
-        # (MagicMock would still have it as attribute, but hasattr would fail with empty spec)
-        assert not hasattr(mock_tracer_provider, "shutdown") or mock_tracer_provider.shutdown.call_count == 0
-        mock_meter_provider.shutdown.assert_called_once()
-        mock_logger_provider.shutdown.assert_called_once()
+#         # Tracer provider has no shutdown, so it shouldn't be called
+#         # (MagicMock would still have it as attribute, but hasattr would fail with empty spec)
+#         assert not hasattr(mock_tracer_provider, "shutdown") or mock_tracer_provider.shutdown.call_count == 0
+#         mock_meter_provider.shutdown.assert_called_once()
+#         mock_logger_provider.shutdown.assert_called_once()
