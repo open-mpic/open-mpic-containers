@@ -1,0 +1,114 @@
+name: Tests
+
+on:
+  workflow_call:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "api-implementation/**"
+      - ".github/workflows/tests.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "api-implementation/**"
+      - ".github/workflows/tests.yml"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  PYTHON_VERSION: "3.13"
+  COVERAGE_MINIMUM: "100"
+
+jobs:
+  unit-tests-and-coverage:
+    name: Unit tests and coverage gate
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api-implementation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install Hatch
+        uses: pypa/hatch@install
+
+      - name: Run unit tests with coverage gate
+        run: |
+          set -o pipefail
+          hatch env run -e test -- pytest tests/unit \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage.xml \
+            --cov-report=html \
+            --junitxml=pytest.xml \
+            --cov-fail-under=${{ env.COVERAGE_MINIMUM }} | tee pytest-coverage.txt
+
+      - name: Upload coverage artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage
+          path: |
+            api-implementation/coverage.xml
+            api-implementation/htmlcov/
+
+      - name: Coverage comment
+        if: always() && github.event_name == 'pull_request'
+        uses: MishaKav/pytest-coverage-comment@v1.7.2
+        with:
+          pytest-coverage-path: api-implementation/pytest-coverage.txt
+          pytest-xml-coverage-path: api-implementation/coverage.xml
+          junitxml-path: api-implementation/pytest.xml
+          title: Coverage Report
+
+      - name: Coverage output for README
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: coverage_readme
+        uses: MishaKav/pytest-coverage-comment@v1.7.2
+        with:
+          pytest-coverage-path: api-implementation/pytest-coverage.txt
+          pytest-xml-coverage-path: api-implementation/coverage.xml
+          junitxml-path: api-implementation/pytest.xml
+          hide-comment: true
+
+      - name: Update README coverage badge block
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          COVERAGE_HTML: ${{ steps.coverage_readme.outputs.coverageHtml }}
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          readme_path = Path("../README.md")
+          start = "<!-- Pytest Coverage Comment:Begin -->"
+          end = "<!-- Pytest Coverage Comment:End -->"
+          content = readme_path.read_text()
+
+          begin = content.find(start)
+          finish = content.find(end)
+          if begin == -1 or finish == -1 or finish < begin:
+              raise SystemExit("README coverage marker block not found")
+
+          finish += len(end)
+          replacement = f"{start}\n{os.environ.get('COVERAGE_HTML', '').strip()}\n{end}"
+          readme_path.write_text(content[:begin] + replacement + content[finish:])
+          PY
+
+      - name: Commit README coverage badge update
+        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "docs: update coverage badge"
+          file_pattern: README.md
