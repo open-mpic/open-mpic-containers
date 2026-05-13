@@ -12,8 +12,6 @@ on:
       - unlabeled
 
 jobs:
-
-
   Tests:
     name: Tests
     runs-on: ubuntu-latest
