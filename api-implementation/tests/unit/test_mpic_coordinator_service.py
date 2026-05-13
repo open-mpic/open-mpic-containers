@@ -94,6 +94,17 @@ class TestMpicCoordinatorService:
         assert "test-1" in perspectives
         assert "test-7" in perspectives["test-8"].too_close_codes
 
+    def convert_codes_to_remote_perspectives__should_skip_unknown_perspective_codes(self):
+        all_possible_perspectives = TestMpicCoordinatorService.get_perspectives_by_code_dict_from_file()
+        perspective_codes = ["missing-code", "test-1"]
+
+        result = MpicCoordinatorService.convert_codes_to_remote_perspectives(
+            perspective_codes, all_possible_perspectives
+        )
+
+        assert len(result) == 1
+        assert result[0].code == "test-1"
+
     async def call_remote_perspective__should_call_remote_perspective_with_provided_arguments_and_return_check_response(
         self, set_env_variables, mocker
     ):
