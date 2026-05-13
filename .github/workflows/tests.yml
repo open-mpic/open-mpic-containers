@@ -44,6 +44,8 @@ jobs:
         uses: pypa/hatch@install
 
       - name: Run unit tests with coverage gate
+        id: unit_tests
+        continue-on-error: true
         run: |
           set -o pipefail
           hatch env run -e test -- pytest tests/unit \
@@ -112,3 +114,9 @@ jobs:
         with:
           commit_message: "docs: update coverage badge"
           file_pattern: README.md
+
+      - name: Fail job if test or coverage gate failed
+        if: steps.unit_tests.outcome == 'failure'
+        run: |
+          echo "Unit tests or coverage gate failed." >&2
+          exit 1
