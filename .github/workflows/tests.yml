@@ -74,46 +74,6 @@ jobs:
           junitxml-path: api-implementation/pytest.xml
           title: Coverage Report
 
-      - name: Coverage output for README
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        id: coverage_readme
-        uses: MishaKav/pytest-coverage-comment@v1.7.2
-        with:
-          pytest-coverage-path: api-implementation/pytest-coverage.txt
-          pytest-xml-coverage-path: api-implementation/coverage.xml
-          junitxml-path: api-implementation/pytest.xml
-          hide-comment: true
-
-      - name: Update README coverage badge block
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        env:
-          COVERAGE_HTML: ${{ steps.coverage_readme.outputs.coverageHtml }}
-        run: |
-          python - <<'PY'
-          import os
-          from pathlib import Path
-
-          readme_path = Path("../README.md")
-          start = "<!-- Pytest Coverage Comment:Begin -->"
-          end = "<!-- Pytest Coverage Comment:End -->"
-          content = readme_path.read_text()
-
-          begin = content.find(start)
-          finish = content.find(end)
-          if begin == -1 or finish == -1 or finish < begin:
-              raise SystemExit("README coverage marker block not found")
-
-          finish += len(end)
-          replacement = f"{start}\n{os.environ.get('COVERAGE_HTML', '').strip()}\n{end}"
-          readme_path.write_text(content[:begin] + replacement + content[finish:])
-          PY
-
-      - name: Commit README coverage badge update
-        if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
-        uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          commit_message: "docs: update coverage badge"
-          file_pattern: README.md
 
       - name: Fail job if test or coverage gate failed
         if: steps.unit_tests.outcome == 'failure'
