@@ -26,6 +26,14 @@ class TestMpicDcvCheckerService:
         yield
 
     @staticmethod
+    @pytest.fixture(autouse=True)
+    def clear_otel_signals(monkeypatch):
+        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
+        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
+        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
+        yield
+
+    @staticmethod
     @pytest.fixture(scope="function")
     def set_env_variables():
         envvars = {
@@ -91,16 +99,8 @@ class TestMpicDcvCheckerService:
     def service__should_instrument_fastapi_when_otel_signal_enabled(self, monkeypatch, mocker):
         monkeypatch.setenv("OTEL_TRACES_ENABLED", "true")
         instrument_app_mock = mocker.patch("opentelemetry.instrumentation.fastapi.FastAPIInstrumentor.instrument_app")
-
         importlib.reload(main_module)
-
         instrument_app_mock.assert_called_once_with(main_module.app)
-
-        # Restore module in non-instrumented mode to avoid import-time state leaking to other tests.
-        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
-        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
-        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
-        importlib.reload(main_module)
 
     def service__should_set_log_level_of_dcv_checker(self, mocker, setup_logging):
         dcv_check_request = ValidCheckCreator.create_valid_http_check_request()

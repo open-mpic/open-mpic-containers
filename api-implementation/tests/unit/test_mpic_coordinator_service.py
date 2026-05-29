@@ -43,6 +43,14 @@ class TestMpicCoordinatorService:
             yield mock
 
     @staticmethod
+    @pytest.fixture(autouse=True)
+    def clear_otel_signals(monkeypatch):
+        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
+        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
+        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
+        yield
+
+    @staticmethod
     @pytest.fixture(scope="function")
     def set_env_variables():
         perspectives_as_dict = TestMpicCoordinatorService.create_perspectives_config_dict()
@@ -208,9 +216,7 @@ class TestMpicCoordinatorService:
         assert response.json() == {"status": "healthy"}
 
     def service__should_instrument_fastapi_when_any_otel_signal_enabled(self, monkeypatch, mocker):
-        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
         monkeypatch.setenv("OTEL_METRICS_ENABLED", "true")
-        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
 
         instrument_app_mock = mocker.patch("opentelemetry.instrumentation.fastapi.FastAPIInstrumentor.instrument_app")
         aiohttp_instrument_mock = mocker.patch(
@@ -222,16 +228,8 @@ class TestMpicCoordinatorService:
         instrument_app_mock.assert_called_once_with(main_module.app)
         aiohttp_instrument_mock.assert_not_called()
 
-        # Restore module in non-instrumented mode to avoid import-time state leaking to other tests.
-        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
-        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
-        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
-        importlib.reload(main_module)
-
     def service__should_instrument_aiohttp_when_tracing_enabled(self, monkeypatch, mocker):
         monkeypatch.setenv("OTEL_TRACES_ENABLED", "true")
-        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
-        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
 
         instrument_app_mock = mocker.patch("opentelemetry.instrumentation.fastapi.FastAPIInstrumentor.instrument_app")
         aiohttp_instrument_mock = mocker.patch(
@@ -242,12 +240,6 @@ class TestMpicCoordinatorService:
 
         instrument_app_mock.assert_called_once_with(main_module.app)
         aiohttp_instrument_mock.assert_called_once()
-
-        # Restore module in non-instrumented mode to avoid import-time state leaking to other tests.
-        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
-        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
-        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
-        importlib.reload(main_module)
 
     def service__should_set_log_level_of_mpic_coordinator(self, set_env_variables, setup_logging, mocker):
         perspectives_codes = TestMpicCoordinatorService.create_perspectives_config_dict().keys()

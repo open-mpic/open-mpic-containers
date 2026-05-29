@@ -25,8 +25,8 @@ from open_mpic_core import MpicCoordinator, MpicCoordinatorConfiguration
 from open_mpic_core import RemotePerspective
 from open_mpic_core import get_logger
 from mpic_observability_util import (
-    otel_any_signal_enabled,
-    otel_tracing_enabled,
+    is_otel_any_signal_enabled,
+    is_otel_tracing_enabled,
     setup_telemetry,
     shutdown_telemetry,
 )
@@ -204,9 +204,9 @@ async def lifespan(app_instance: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-if otel_any_signal_enabled():
+if is_otel_any_signal_enabled():
     FastAPIInstrumentor.instrument_app(app)
-if otel_tracing_enabled():
+if is_otel_tracing_enabled():
     AioHttpClientInstrumentor().instrument()
 
 
