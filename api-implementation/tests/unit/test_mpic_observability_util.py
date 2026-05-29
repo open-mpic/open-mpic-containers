@@ -39,6 +39,7 @@ class TestEnvBool:
 
 class TestOtelSignalHelpers:
     """Test otel signal detection functions."""
+
     @staticmethod
     @pytest.fixture(autouse=True)
     def clear_otel_signals(monkeypatch):
@@ -71,6 +72,7 @@ class TestOtelSignalHelpers:
 
 class TestSetupTelemetry:
     """Test setup_telemetry with various signal combinations."""
+
     @staticmethod
     @pytest.fixture(autouse=True)
     def clear_otel_signals(monkeypatch):

@@ -19,11 +19,11 @@ authors = [
     { name = "Alan Hanafy", email = "alan.hanafy@sectigo.com" }
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
 ]
 dependencies = [
     "pyyaml==6.0.2",
@@ -39,7 +39,7 @@ dependencies = [
     "opentelemetry-exporter-otlp-proto-http==1.41.1",
     "opentelemetry-instrumentation-fastapi==0.62b1",
     "opentelemetry-instrumentation-aiohttp-client==0.62b1",
-    "setuptools<81",  # beta OTEL instrumentation packages still import pkg_resources (removed in setuptools>=81)
+    "setuptools<81", # beta OTEL instrumentation packages still import pkg_resources (removed in setuptools>=81)
 ]
 
 [project.optional-dependencies]
@@ -70,8 +70,8 @@ build.targets.wheel.packages = ["src"]
 
 [tool.hatch.envs.default]
 skip-install = false
-type="virtual"
-path="../venv"
+type = "virtual"
+path = "../venv"
 features = [
     "dev",
     "test"
@@ -94,7 +94,7 @@ PIP_INDEX_URL = "https://pypi.org/simple/"
 PIP_VERBOSE = "1"
 
 [tool.hatch.envs.production]
-dev-mode=false
+dev-mode = false
 
 # 'dev' and 'test' named envs inherit from default so 'hatch run test:unit' still works
 [tool.hatch.envs.dev]
@@ -119,10 +119,10 @@ python_functions = [
 ]
 markers = [
     "integration: mark test as an integration test",
-    "unit: mark test as a unit test",  # optional
+    "unit: mark test as a unit test", # optional
 ]
 addopts = [
-    "--import-mode=prepend",  # explicit default, as the tests rely on it for proper import resolution
+    "--import-mode=prepend", # explicit default, as the tests rely on it for proper import resolution
 ]
 asyncio_mode = "auto"  # defaults to "strict"
 asyncio_default_fixture_loop_scope = "function"
