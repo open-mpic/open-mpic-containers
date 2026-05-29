@@ -11,7 +11,7 @@ from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from open_mpic_core import CaaCheckRequest
 from open_mpic_core import MpicCaaChecker
 from open_mpic_core import get_logger
-from mpic_observability_util import otel_any_signal_enabled, setup_telemetry, shutdown_telemetry
+from mpic_observability_util import is_otel_any_signal_enabled, setup_telemetry, shutdown_telemetry
 
 # 'config' directory should be a sibling of the directory containing this file
 config_path = Path(__file__).parent / "config" / "app.conf"
@@ -65,7 +65,7 @@ async def lifespan(app_instance: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-if otel_any_signal_enabled():
+if is_otel_any_signal_enabled():
     FastAPIInstrumentor.instrument_app(app)
 
 

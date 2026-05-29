@@ -24,6 +24,14 @@ class TestMpicCaaCheckerService:
         yield
 
     @staticmethod
+    @pytest.fixture(autouse=True)
+    def clear_otel_signals(monkeypatch):
+        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
+        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
+        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
+        yield
+
+    @staticmethod
     @pytest.fixture(scope="function")
     def set_env_variables():
         envvars = {
@@ -71,12 +79,6 @@ class TestMpicCaaCheckerService:
         importlib.reload(main_module)
 
         instrument_app_mock.assert_called_once_with(main_module.app)
-
-        # Restore module in non-instrumented mode to avoid import-time state leaking to other tests.
-        monkeypatch.setenv("OTEL_TRACES_ENABLED", "false")
-        monkeypatch.setenv("OTEL_METRICS_ENABLED", "false")
-        monkeypatch.setenv("OTEL_LOGS_ENABLED", "false")
-        importlib.reload(main_module)
 
     def service__should_set_log_level_of_caa_checker(self, setup_logging, mocker):
         caa_check_request = ValidCheckCreator.create_valid_caa_check_request()

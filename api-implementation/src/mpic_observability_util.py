@@ -18,70 +18,69 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 _otel_logging_handler: LoggingHandler | None = None
 
 
-def env_bool(name: str, default: bool = False) -> bool:
+# TODO look into using Pydantic Settings for all env variable management in this project
+def is_boolean_env_true(name: str, default: bool = False) -> bool:
     value = os.environ.get(name)
     if value is None:
         return default
     return value.lower() == "true"
 
 
-def otel_any_signal_enabled() -> bool:
+def is_otel_any_signal_enabled() -> bool:
     return (
-        env_bool("OTEL_TRACES_ENABLED", False)
-        or env_bool("OTEL_METRICS_ENABLED", False)
-        or env_bool("OTEL_LOGS_ENABLED", False)
+            is_boolean_env_true("OTEL_TRACES_ENABLED", False)
+            or is_boolean_env_true("OTEL_METRICS_ENABLED", False)
+            or is_boolean_env_true("OTEL_LOGS_ENABLED", False)
     )
 
 
-def otel_tracing_enabled() -> bool:
-    return env_bool("OTEL_TRACES_ENABLED", False)
+def is_otel_tracing_enabled() -> bool:
+    return is_boolean_env_true("OTEL_TRACES_ENABLED", False)
 
 
 def setup_telemetry(service_name: str) -> None:
     """Initialize OpenTelemetry SDK providers for metrics, traces, and logs."""
-    traces_enabled = env_bool("OTEL_TRACES_ENABLED", False)
-    metrics_enabled = env_bool("OTEL_METRICS_ENABLED", False)
-    logs_enabled = env_bool("OTEL_LOGS_ENABLED", False)
+    traces_enabled = is_boolean_env_true("OTEL_TRACES_ENABLED", False)
+    metrics_enabled = is_boolean_env_true("OTEL_METRICS_ENABLED", False)
+    logs_enabled = is_boolean_env_true("OTEL_LOGS_ENABLED", False)
 
-    if not (traces_enabled or metrics_enabled or logs_enabled):
-        return
+    if traces_enabled or metrics_enabled or logs_enabled:
+        try:
+            api_version = importlib.metadata.version("open-mpic-restapi-server")
+        except importlib.metadata.PackageNotFoundError:
+            api_version = "unknown"
 
-    try:
-        api_version = importlib.metadata.version("open-mpic-restapi-server")
-    except importlib.metadata.PackageNotFoundError:
-        api_version = "unknown"
+        try:
+            core_version = importlib.metadata.version("open-mpic-core")
+        except importlib.metadata.PackageNotFoundError:
+            core_version = "unknown"
 
-    try:
-        core_version = importlib.metadata.version("open-mpic-core")
-    except importlib.metadata.PackageNotFoundError:
-        core_version = "unknown"
+        resource = Resource.create(
+            {
+                SERVICE_NAME: os.environ.get("OTEL_SERVICE_NAME", service_name),
+                SERVICE_VERSION: api_version,
+                "open_mpic_core.version": core_version,
+            }
+        )
 
-    resource = Resource.create(
-        {
-            SERVICE_NAME: os.environ.get("OTEL_SERVICE_NAME", service_name),
-            SERVICE_VERSION: api_version,
-            "open_mpic_core.version": core_version,
-        }
-    )
+        if traces_enabled:
+            tracer_provider = TracerProvider(resource=resource)
+            tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
+            trace.set_tracer_provider(tracer_provider)
 
-    if traces_enabled:
-        tracer_provider = TracerProvider(resource=resource)
-        tracer_provider.add_span_processor(BatchSpanProcessor(OTLPSpanExporter()))
-        trace.set_tracer_provider(tracer_provider)
+        if metrics_enabled:
+            reader = PeriodicExportingMetricReader(OTLPMetricExporter())
+            meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
+            metrics.set_meter_provider(meter_provider)
 
-    if metrics_enabled:
-        reader = PeriodicExportingMetricReader(OTLPMetricExporter())
-        meter_provider = MeterProvider(resource=resource, metric_readers=[reader])
-        metrics.set_meter_provider(meter_provider)
-
-    if logs_enabled:
-        global _otel_logging_handler
-        logger_provider = LoggerProvider(resource=resource)
-        logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
-        set_logger_provider(logger_provider)
-        if _otel_logging_handler is None:
-            _otel_logging_handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
-            logging.getLogger().addHandler(_otel_logging_handler)
+        if logs_enabled:
+            global _otel_logging_handler
+            logger_provider = LoggerProvider(resource=resource)
+            logger_provider.add_log_record_processor(BatchLogRecordProcessor(OTLPLogExporter()))
+            set_logger_provider(logger_provider)
+            if _otel_logging_handler is None:
+                _otel_logging_handler = LoggingHandler(level=logging.INFO, logger_provider=logger_provider)
+                logging.getLogger().addHandler(_otel_logging_handler)  # type: ignore[arg-type]
 
 
 def shutdown_telemetry() -> None:
