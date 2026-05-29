@@ -28,9 +28,9 @@ def is_boolean_env_true(name: str, default: bool = False) -> bool:
 
 def is_otel_any_signal_enabled() -> bool:
     return (
-            is_boolean_env_true("OTEL_TRACES_ENABLED", False)
-            or is_boolean_env_true("OTEL_METRICS_ENABLED", False)
-            or is_boolean_env_true("OTEL_LOGS_ENABLED", False)
+        is_boolean_env_true("OTEL_TRACES_ENABLED", False)
+        or is_boolean_env_true("OTEL_METRICS_ENABLED", False)
+        or is_boolean_env_true("OTEL_LOGS_ENABLED", False)
     )
 
 
