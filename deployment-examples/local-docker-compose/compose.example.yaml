@@ -102,7 +102,7 @@ services:
         target: /app/config/uvicorn_config.yaml
 
   unbound:
-    image: ghcr.io/open-mpic/unbound:latest
+    image: cgr.dev/chainguard/unbound:latest
     restart: unless-stopped
     #volumes:
     #  - ./unbound_config/unbound.conf:/opt/unbound/etc/unbound/unbound.conf:ro

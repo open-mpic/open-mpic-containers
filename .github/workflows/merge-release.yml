@@ -199,110 +199,10 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "---" >> $GITHUB_STEP_SUMMARY
 
-  Image-Build-Unbound:
-    runs-on: ubuntu-latest
-    needs: [shared-tags]
-    permissions:
-      contents: read
-      packages: write
-      attestations: write
-      id-token: write
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Authenticate to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound
-          tags: |
-            type=raw,value=${{ needs.shared-tags.outputs.legacy-timestamp }}
-            type=raw,value=${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and export to Docker
-        uses: docker/build-push-action@v6
-        with:
-          load: true
-          context: unbound
-          file: unbound/Dockerfile
-          tags: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound:${{ env.TEST_TAG }}
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.35.0
-        with:
-          image-ref: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound:${{ env.TEST_TAG }}
-          format: "table"
-          exit-code: "1"
-          ignore-unfixed: true
-          vuln-type: "os,library"
-          severity: "CRITICAL,HIGH"
-
-      - name: Build and push image
-        id: push
-        uses: docker/build-push-action@v6
-        with:
-          context: unbound
-          platforms: linux/amd64,linux/arm64
-          file: unbound/Dockerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
-        with:
-          subject-name: ${{ env.REGISTRY }}/${{ github.repository_owner }}/unbound
-          subject-digest: ${{ steps.push.outputs.digest }}
-          push-to-registry: true
-
-      - name: Add container registry links to summary
-        if: success() && steps.push.outcome == 'success'
-        id: package-id
-        run: |
-          sleep 10
-          TAG="${{ needs.shared-tags.outputs.branch-name }}-${{ needs.shared-tags.outputs.timestamp }}"
-
-          echo "Attempting to find exact package version ID..."
-          RESPONSE=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-            -H "Accept: application/vnd.github.v3+json" \
-            "https://api.github.com/orgs/${{ github.repository_owner }}/packages/container/unbound/versions")
-
-          PACKAGE_VERSION_ID=$(echo "$RESPONSE" | jq -r '.[] | select(.metadata.container.tags[] | contains("'"$TAG"'")) | .id')
-
-          echo "### 📦 Container Registry Links" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-
-          if [ -n "$PACKAGE_VERSION_ID" ]; then
-            echo "Found package version ID: $PACKAGE_VERSION_ID"
-            echo "PACKAGE_VERSION_ID=$PACKAGE_VERSION_ID" >> $GITHUB_OUTPUT
-            echo "- [📋 Package Version Link](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/unbound/$PACKAGE_VERSION_ID?tag=$TAG)" >> $GITHUB_STEP_SUMMARY
-          else
-            echo "Note: Could not determine exact package version ID."
-            echo "- [📋 Container Registry](https://github.com/${{ github.repository_owner }}/open-mpic-containers/pkgs/container/unbound)" >> $GITHUB_STEP_SUMMARY
-          fi
-
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "---" >> $GITHUB_STEP_SUMMARY
-
   Draft-Release-On-Main:
     name: Draft release on merge to main
     runs-on: ubuntu-latest
-    needs: [shared-tags, Image-Build, Image-Build-Unbound]
+    needs: [shared-tags, Image-Build]
     permissions:
       contents: write
     steps:
@@ -336,7 +236,6 @@ jobs:
           - [ghcr.io/${{ github.repository_owner }}/coordinator:${ISO_TAG}](https://ghcr.io/${{ github.repository_owner }}/coordinator:${ISO_TAG})
           - [ghcr.io/${{ github.repository_owner }}/dcv_checker:${ISO_TAG}](https://ghcr.io/${{ github.repository_owner }}/dcv_checker:${ISO_TAG})
           - [ghcr.io/${{ github.repository_owner }}/caa_checker:${ISO_TAG}](https://ghcr.io/${{ github.repository_owner }}/caa_checker:${ISO_TAG})
-          - [ghcr.io/${{ github.repository_owner }}/unbound:${ISO_TAG}](https://ghcr.io/${{ github.repository_owner }}/unbound:${ISO_TAG})
           EOF
 
           echo "iso-tag=${ISO_TAG}" >> "$GITHUB_OUTPUT"
