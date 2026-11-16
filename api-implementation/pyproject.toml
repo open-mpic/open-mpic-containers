@@ -7,9 +7,9 @@ allow-direct-references = true
 
 [project]
 name = "open-mpic-restapi-server"
-version = "1.9.0"
+version = "1.10.0"
 description = 'MPIC standard API implementation leveraging FastAPI and Docker.'
-requires-python = ">=3.11"
+requires-python = ">=3.11,<3.14"
 license = "MIT"
 keywords = []
 authors = [
@@ -28,17 +28,17 @@ classifiers = [
 dependencies = [
     "pyyaml==6.0.2",
     "requests==2.33.0",
-    "dnspython==2.7.0",
+    "dnspython==2.9.2",
     "pydantic==2.11.7",
-    "fastapi[standard]>=0.120.1,<0.121.0",
-    "starlette==0.49.1",
-    "open-mpic-core==6.5.0",
-    "aiohttp==3.13.4",
+    "fastapi[standard]>=0.163.1",
+    "starlette==1.3.1",
+    "open-mpic-core==6.6.0",
+    "aiohttp==3.14.5",
     "uvicorn>=0.34.3,<0.35.0",
-    "opentelemetry-sdk==1.41.1",
-    "opentelemetry-exporter-otlp-proto-http==1.41.1",
-    "opentelemetry-instrumentation-fastapi==0.62b1",
-    "opentelemetry-instrumentation-aiohttp-client==0.62b1",
+    "opentelemetry-sdk==1.45.2",
+    "opentelemetry-exporter-otlp-proto-http==1.45.2",
+    "opentelemetry-instrumentation-fastapi==0.66b2",
+    "opentelemetry-instrumentation-aiohttp-client==0.66b2",
     "setuptools<81", # beta OTEL instrumentation packages still import pkg_resources (removed in setuptools>=81)
 ]
 
@@ -61,7 +61,7 @@ Issues = "https://github.com/open-mpic/open-mpic-restapi-server/issues"
 Source = "https://github.com/open-mpic/open-mpic-restapi-server"
 
 [tool.api]
-spec_version = "3.9.0"
+spec_version = "3.11.0"
 spec_repository = "https://github.com/open-mpic/open-mpic-specification"
 
 [tool.hatch]
@@ -136,6 +136,7 @@ source = [
 include_namespace_packages = true
 omit = [
     "*/src/*/__about__.py",
+    "*/src/*/__init__.py",
 ]
 
 [tool.black]

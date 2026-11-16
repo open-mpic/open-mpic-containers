@@ -144,7 +144,7 @@ class TestMpicCoordinatorService:
         service = MpicCoordinatorService()
         dcv_check_request = ValidCheckCreator.create_valid_dns_check_request()
 
-        with pytest.raises(RuntimeError, match="Service not initialized - call initialize\(\) first"):
+        with pytest.raises(RuntimeError, match="Service not initialized - call initialize\\(\\) first"):
             await service.call_remote_perspective(
                 RemotePerspective(code="test-1", rir=RegionalInternetRegistry.ARIN),
                 CheckType.DCV,
@@ -347,6 +347,7 @@ class TestMpicCoordinatorService:
             traces=[],
             loop=event_loop,
             session=AsyncMock(),
+            stream_writer=MagicMock(),
         )
         headers = {"Content-Type": "application/json", "Content-Length": str(len(content))}
 
